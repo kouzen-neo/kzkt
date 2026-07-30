@@ -17,7 +17,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
+import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.launch
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -258,24 +262,163 @@ fun MainScreen(
                 }
             }
 
-            // ── Result preview ──
-            viewModel.currentPreviewPath.value?.let { previewPath ->
+            // ── Result Preview & Action Bar ──
+            val previewPath = viewModel.currentPreviewPath.value
+            val resultList = viewModel.resultPaths
+
+            if (previewPath != null || resultList.isNotEmpty()) {
+                var showFullscreenViewer by remember { mutableStateOf(false) }
+                val currentPath = previewPath ?: resultList.last()
+
                 Spacer(Modifier.height(8.dp))
-                Surface(
-                    shape = MaterialTheme.shapes.small,
-                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Box(modifier = Modifier.fillMaxSize().padding(4.dp)) {
-                        // Show last rendered result as a thumbnail note
-                        Text(
-                            "Output: ${previewPath.substringAfterLast('/')}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.align(Alignment.Center),
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                "Hasil Terjemahan (${resultList.size} Halaman)",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                currentPath.substringAfterLast('/'),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        // Action Buttons
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            // In-App Fullscreen Viewer
+                            Button(
+                                onClick = { showFullscreenViewer = true },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(vertical = 4.dp, horizontal = 8.dp)
+                            ) {
+                                Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Lihat di App", fontSize = 12.sp)
+                            }
+
+                            // Open in System Gallery
+                            OutlinedButton(
+                                onClick = { FileUtils.openFileInSystemViewer(context, currentPath) },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(vertical = 4.dp, horizontal = 8.dp)
+                            ) {
+                                Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Galeri HP", fontSize = 12.sp)
+                            }
+
+                            // Share
+                            IconButton(
+                                onClick = { FileUtils.shareFile(context, currentPath) },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(Icons.Default.Share, contentDescription = "Share", tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                }
+
+                // Fullscreen In-App Image Viewer Dialog
+                if (showFullscreenViewer) {
+                    androidx.compose.ui.window.Dialog(
+                        onDismissRequest = { showFullscreenViewer = false },
+                        properties = androidx.compose.ui.window.DialogProperties(
+                            usePlatformDefaultWidth = false
                         )
+                    ) {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = androidx.compose.ui.graphics.Color.Black
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                var scale by remember { mutableStateOf(1f) }
+                                var offsetX by remember { mutableStateOf(0f) }
+                                var offsetY by remember { mutableStateOf(0f) }
+
+                                val state = androidx.compose.foundation.gestures.rememberTransformableState { zoomChange, panChange, _ ->
+                                    scale = (scale * zoomChange).coerceIn(0.8f, 5f)
+                                    offsetX += panChange.x
+                                    offsetY += panChange.y
+                                }
+
+                                coil.compose.AsyncImage(
+                                    model = java.io.File(currentPath),
+                                    contentDescription = "Translated Manga Page",
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .graphicsLayer(
+                                            scaleX = scale,
+                                            scaleY = scale,
+                                            translationX = offsetX,
+                                            translationY = offsetY
+                                        )
+                                        .transformable(state = state)
+                                )
+
+
+                                // Top bar with close and share button
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp)
+                                        .align(Alignment.TopCenter),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    IconButton(
+                                        onClick = { showFullscreenViewer = false },
+                                        colors = IconButtonDefaults.iconButtonColors(
+                                            containerColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f)
+                                        )
+                                    ) {
+                                        Icon(Icons.Default.Close, contentDescription = "Close", tint = androidx.compose.ui.graphics.Color.White)
+                                    }
+
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        IconButton(
+                                            onClick = { FileUtils.shareFile(context, currentPath) },
+                                            colors = IconButtonDefaults.iconButtonColors(
+                                                containerColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f)
+                                            )
+                                        ) {
+                                            Icon(Icons.Default.Share, contentDescription = "Share", tint = androidx.compose.ui.graphics.Color.White)
+                                        }
+
+                                        IconButton(
+                                            onClick = { FileUtils.openFileInSystemViewer(context, currentPath) },
+                                            colors = IconButtonDefaults.iconButtonColors(
+                                                containerColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f)
+                                            )
+                                        ) {
+                                            Icon(Icons.Default.OpenInNew, contentDescription = "Open in Gallery", tint = androidx.compose.ui.graphics.Color.White)
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
+

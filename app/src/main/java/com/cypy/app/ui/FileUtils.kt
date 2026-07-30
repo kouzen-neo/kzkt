@@ -77,4 +77,55 @@ object FileUtils {
             null
         }
     }
+
+    /**
+     * Open a translated image file using System Gallery / Media Viewer Intent.
+     */
+    fun openFileInSystemViewer(context: Context, filePath: String) {
+        try {
+            val file = File(filePath)
+            if (!file.exists()) return
+
+            val uri: Uri = androidx.core.content.FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+
+            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "image/*")
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            android.util.Log.e("CYPY", "Failed to open file in system viewer: ${e.message}")
+        }
+    }
+
+    /**
+     * Share a translated image file to WhatsApp / Social Media.
+     */
+    fun shareFile(context: Context, filePath: String) {
+        try {
+            val file = File(filePath)
+            if (!file.exists()) return
+
+            val uri: Uri = androidx.core.content.FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+
+            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = "image/*"
+                putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(android.content.Intent.createChooser(intent, "Share Translated Image"))
+        } catch (e: Exception) {
+            android.util.Log.e("CYPY", "Failed to share file: ${e.message}")
+        }
+    }
 }
+
