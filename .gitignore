@@ -1,21 +1,37 @@
-# Byte-compiled / optimized / DLL files
+# ==========================================
+# ✦ Android / Kotlin / Gradle ✦
+# ==========================================
+.gradle/
+**/build/
+android/.gradle/
+android/.kotlin/
+android/app/build/
+android/opencv/build/
+android/.externalNativeBuild/
+android/.cxx/
+local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# IDE & Editor files
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# ==========================================
+# ✦ Python / CyPy ✦
+# ==========================================
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Temporary Manga Translation files
-cypy_cache/
-test/
-
-# Data & Config files
-cypy_profile.json
-data/
-*.txt
-!requirements.txt
-
-# Binaries
-bin/
-*.exe
+*.egg-info/
+cypy.egg-info/
 
 # Environments
 .env
@@ -26,26 +42,19 @@ ENV/
 env.bak/
 venv.bak/
 
-# Logs
-*.log
-
-# Caches
+# Temporary & Cache files
+cypy_cache/
 .cache/
+data/
+cypy_profile.json
+*.log
+cypy_crash.txt
 
-# OS specific
-.DS_Store
-Thumbs.db
-.vscode/
-
-# Python build and packaging
-*.egg-info/
-build/
+# Python Build & Packaging artifacts
 dist/
 dist_nuitka/
 releases/
 *.spec
-
-# Nuitka & Installer build artifacts
 *.build/
 *.dist/
 *.onefile-build/

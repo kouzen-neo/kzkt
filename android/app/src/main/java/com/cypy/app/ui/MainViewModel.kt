@@ -1,0 +1,278 @@
+package com.cypy.app.ui
+
+import android.app.Application
+import android.net.Uri
+import android.os.Environment
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.cypy.app.core.Config
+import com.cypy.app.core.ImageProcessor
+import com.cypy.app.core.RateLimiter
+import com.cypy.app.core.TextRenderer
+import com.cypy.app.core.TranslationPipeline
+import com.cypy.app.core.YoloOnnx
+import com.cypy.app.core.providers.*
+import com.cypy.app.data.SettingsRepository
+import com.google.gson.Gson
+import com.google.gson.JsonParser
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.File
+import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
+
+class MainViewModel(application: Application) : AndroidViewModel(application) {
+
+    val settingsRepo = SettingsRepository(application)
+
+    // Observable state
+    val settings = mutableStateOf(SettingsRepository.Settings())
+
+    // File processing
+    val selectedFiles = mutableStateListOf<String>()
+    val translationLog = mutableStateListOf<String>()
+    val translationActive = mutableStateOf(false)
+    val translationProgress = mutableStateOf(0f)
+    val translationTotal = mutableStateOf(0)
+    val translationDone = mutableStateOf(0)
+
+    // Result
+    val resultPaths = mutableStateListOf<String>()
+    val currentPreviewPath = mutableStateOf<String?>(null)
+
+    // YOLO model state
+    val yoloReady = mutableStateOf(false)
+    val yoloError = mutableStateOf<String?>(null)
+
+    // Custom provider model list (from /v1/models)
+    val customModels = mutableStateListOf<String>()
+    val customModelsLoading = mutableStateOf(false)
+
+    // Cancel flag
+    private var _cancelled = false
+
+    private var yolo: YoloOnnx? = null
+    private var textRenderer: TextRenderer? = null
+
+    private var pipelineLaunched = false
+
+    init {
+        // Load settings
+        viewModelScope.launch {
+            settingsRepo.settingsFlow.collect { s ->
+                settings.value = s
+            }
+        }
+    }
+
+    fun initialize(context: android.content.Context) {
+        if (pipelineLaunched) return
+        pipelineLaunched = true
+
+        viewModelScope.launch {
+            yolo = YoloOnnx(context)
+            val ok = yolo!!.initialize()
+            if (ok) {
+                yoloReady.value = true
+                translationLog.add("YOLO model loaded successfully")
+            } else {
+                yoloError.value = "Failed to load YOLO model"
+                translationLog.add("[!] Failed to load YOLO model")
+            }
+            textRenderer = TextRenderer(context)
+        }
+    }
+
+    fun createProvider(): LlmProvider? {
+        val s = settings.value
+        val meta = Config.PROVIDER_REGISTRY[s.llmProvider] ?: return null
+
+        val apiKey = when (s.llmProvider) {
+            "gemini" -> s.geminiApiKey
+            "openai" -> s.openaiApiKey
+            "openrouter" -> s.openrouterApiKey
+            "zen" -> s.zenApiKey
+            "opencodego" -> s.opencodegoApiKey
+            "custom" -> s.customApiKey
+            else -> ""
+        }
+        val modelName = when (s.llmProvider) {
+            "gemini" -> s.modelGemini
+            "openai" -> s.modelOpenai
+            "openrouter" -> s.modelOpenrouter
+            "zen" -> s.modelZen
+            "opencodego" -> s.modelOpencodego
+            "custom" -> s.modelCustom
+            else -> meta.defaultModel
+        }
+
+        return when (s.llmProvider) {
+            "gemini" -> GeminiProvider(apiKey, modelName)
+            "openai" -> OpenAIProvider(apiKey, modelName)
+            "openrouter" -> OpenRouterProvider(apiKey, modelName)
+            "zen" -> ZenProvider(apiKey, modelName)
+            "opencodego" -> OpenCodeGoProvider(apiKey, modelName)
+            "custom" -> CustomProvider(apiKey, modelName, s.customBaseUrl)
+            else -> null
+        }
+    }
+
+    fun startTranslation() {
+        if (selectedFiles.isEmpty() || translationActive.value) return
+        if (yolo == null || textRenderer == null) {
+            translationLog.add("[!] YOLO model not ready")
+            return
+        }
+
+        val provider = createProvider()
+        if (provider == null) {
+            translationLog.add("[!] Invalid provider")
+            return
+        }
+
+        _cancelled = false
+        translationActive.value = true
+        translationLog.clear()
+        resultPaths.clear()
+        translationProgress.value = 0f
+        translationTotal.value = selectedFiles.size
+        translationDone.value = 0
+
+        val filesToProcess = selectedFiles.toList()
+        val downloadFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val cypyFolder = File(downloadFolder, "CYPY")
+        cypyFolder.mkdirs()
+        val outputDir = cypyFolder.absolutePath
+
+        viewModelScope.launch {
+            val params = Config.TweakParams(
+                maxBubblesPerRequest = settings.value.maxBubblesPerRequest,
+                minRequestDelay = settings.value.minRequestDelay.toDouble(),
+                filterSfxMode = settings.value.filterSfxMode,
+                padXRatio = settings.value.padXRatio.toDouble(),
+                padYRatio = settings.value.padYRatio.toDouble(),
+                minPad = settings.value.minPad,
+            )
+
+            val pipeline = TranslationPipeline(
+                yolo = yolo,
+                provider = provider,
+                textRenderer = textRenderer!!,
+                params = params,
+                targetLanguage = settings.value.targetLanguage,
+                onProgress = { msg ->
+                    translationLog.add(msg)
+                    if (msg.contains("Done!")) {
+                        translationDone.value = translationDone.value + 1
+                        translationProgress.value = translationDone.value.toFloat() / translationTotal.value
+                    }
+                },
+                isCancelled = { _cancelled }
+            )
+
+            // Simple: process one by one (single-image mode)
+            for ((idx, path) in filesToProcess.withIndex()) {
+                if (_cancelled) {
+                    translationLog.add("[Cancelled] Translation stopped by user.")
+                    break
+                }
+                translationLog.add("[${idx + 1}/${filesToProcess.size}] Processing ${File(path).name}...")
+                val result = pipeline.processSingleImage(path, outputDir)
+                if (result.outputPath != null) {
+                    resultPaths.add(result.outputPath)
+                    currentPreviewPath.value = result.outputPath
+                }
+                translationDone.value = idx + 1
+                translationProgress.value = (idx + 1).toFloat() / translationTotal.value
+            }
+
+            translationLog.add("Translation complete.")
+            translationActive.value = false
+        }
+    }
+
+    fun cancelTranslation() {
+        _cancelled = true
+    }
+
+    fun addFiles(paths: List<String>) {
+        selectedFiles.clear()
+        selectedFiles.addAll(paths)
+    }
+
+    fun addLog(msg: String) {
+        translationLog.add(msg)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        yolo?.close()
+    }
+
+    // ── Custom provider model auto-detect ──
+
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
+        .build()
+
+    fun fetchCustomModels(baseUrl: String, apiKey: String) {
+        if (baseUrl.isBlank()) return
+        customModelsLoading.value = true
+        customModels.clear()
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Normalize: strip /chat/completions and /v1, then add /v1/models
+                var normalized = baseUrl.trimEnd('/')
+                if (normalized.endsWith("/chat/completions")) normalized = normalized.removeSuffix("/chat/completions")
+                if (normalized.endsWith("/v1")) normalized = normalized.removeSuffix("/v1")
+                val endpoint = "$normalized/v1/models"
+                val request = Request.Builder().url(endpoint)
+                if (apiKey.isNotBlank()) request.header("Authorization", "Bearer $apiKey")
+                val response = httpClient.newCall(request.build()).execute()
+                val body = response.body?.string() ?: ""
+
+                val json = JsonParser.parseString(body).asJsonObject
+                val data = json.getAsJsonArray("data")
+                val models = mutableListOf<String>()
+                if (data != null) {
+                    for (elem in data) {
+                        val id = elem.asJsonObject.get("id")?.asString
+                        if (id != null) models.add(id)
+                    }
+                }
+                // Fallback: some providers use "models" key
+                if (models.isEmpty()) {
+                    val modelsArr = json.getAsJsonArray("models")
+                    if (modelsArr != null) {
+                        for (elem in modelsArr) {
+                            val id = elem.asJsonObject.get("id")?.asString
+                            if (id != null) models.add(id)
+                        }
+                    }
+                }
+
+                launch(Dispatchers.Main) {
+                    if (models.isNotEmpty()) {
+                        customModels.addAll(models.sorted())
+                        translationLog.add("Found ${models.size} models from custom provider")
+                    } else {
+                        translationLog.add("[!] No models found at $baseUrl/v1/models")
+                    }
+                    customModelsLoading.value = false
+                }
+            } catch (e: Exception) {
+                launch(Dispatchers.Main) {
+                    translationLog.add("[!] Failed to fetch models: ${e.message}")
+                    customModelsLoading.value = false
+                }
+            }
+        }
+    }
+}
