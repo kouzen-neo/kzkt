@@ -1,21 +1,17 @@
-# ==========================================
-# ✦ Android / Kotlin / Gradle ✦
-# ==========================================
+# Android & Kotlin build outputs
 .gradle/
-**/build/
-android/.gradle/
-android/.kotlin/
-android/app/build/
-android/opencv/build/
-android/.externalNativeBuild/
-android/.cxx/
+build/
+app/build/
+opencv/build/
+.externalNativeBuild/
+.cxx/
 local.properties
 *.apk
 *.aab
 *.ap_
 *.dex
 
-# IDE & Editor files
+# IDE & OS configuration
 .idea/
 *.iml
 .vscode/
@@ -23,39 +19,3 @@ local.properties
 Thumbs.db
 *.swp
 *~
-
-# ==========================================
-# ✦ Python / CyPy ✦
-# ==========================================
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-cypy.egg-info/
-
-# Environments
-.env
-.venv*/
-env/
-venv*/
-ENV/
-env.bak/
-venv.bak/
-
-# Temporary & Cache files
-cypy_cache/
-.cache/
-data/
-cypy_profile.json
-*.log
-cypy_crash.txt
-
-# Python Build & Packaging artifacts
-dist/
-dist_nuitka/
-releases/
-*.spec
-*.build/
-*.dist/
-*.onefile-build/
-*.iss

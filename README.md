@@ -1,94 +1,65 @@
-# cypy
+# 📱 CyPy Translator - Native Android Kotlin
 
-<p align="center">
-  <img src="assets/favicon.png" width="100" alt="cypy Logo" />
-</p>
-
-<p align="center">
-  <img src="assets/gui.webp" alt="cypy GUI Screenshot" />
-</p>
-
-**cypy** is an automated manga translation tool. It detects speech bubbles using YOLOv8, translates text via LLM APIs (Gemini, OpenAI, Zen, OpenRouter), cleans background areas, and fits translated typography into comic panels.
+A high-performance, native Android application for automatic manga and comic translation powered by **ONNX Runtime (YOLO)**, **OpenCV C++ Native**, and **Multi-Provider Vision LLMs** (Gemini, OpenAI, OpenRouter, Zen, OpenCode Go, and Custom OpenAI-Compatible Endpoints).
 
 ---
 
-## Features
+## 🌟 Key Features
 
-- **Multi-Format Support:** Process images (PNG, JPG, WEBP), PDFs, and archives (ZIP, CBZ, RAR, CBR) in exact page sequence.
-- **Drag & Drop:** Drop files or folders directly onto the GUI or terminal window.
-- **Smart Batching & Rate Limiting:** Automatic bubble chunking (max 20 per request), request throttling, and retry handling for vision LLM APIs.
-- **Multiple AI Providers:** Google Gemini, OpenAI, Zen (free), OpenCode Go, OpenRouter, and custom OpenAI-compatible endpoints.
-- **GUI & CLI Modes:** Desktop graphical interface or interactive terminal prompt.
+- **🚀 Native Performance:** Built with Jetpack Compose, Kotlin Coroutines, and OpenCV C++ JNI for instant UI responsiveness and minimal memory consumption.
+- **🎯 YOLO Speech Bubble Detection:** Uses embedded ONNX Runtime to detect speech bubbles on-device with high precision.
+- **🤖 Multi-Provider LLM Support:**
+  - **Google Gemini** (`gemini-3.1-flash-lite`, etc.)
+  - **OpenAI** (`gpt-5.4-mini`, etc.)
+  - **OpenRouter** (`qwen2.5-vl-72b`, etc.)
+  - **Zen / OpenCode Go**
+  - **Custom / Local AI:** Dynamic Base URL & Auto-Model Detection for Ollama, LM Studio, vLLM, and local servers (with/without API Key).
+- **🧩 Smart Mosaic Batching:** Partitions comic bubbles into high-density mosaics with vertical RTL reading order to minimize API requests and costs.
+- **🎨 Dynamic Typography & Masking:** Automatic background masking (rounded rectangle / oval) and font scaling for seamless in-bubble rendering.
+- **📂 Public Gallery Output:** Translated pages save directly to `/Download/CYPY/` so they appear instantly in Galeri HP and Google Photos.
+- **⚡ PhotoPicker & Scoped Storage Safe:** Compatible with Android 10 to Android 15+.
 
 ---
 
-## Translation Preview
+## 🛠️ Project Structure
 
-| Original Page (Before) | Translated Page (After) |
-| :---: | :---: |
-| <img src="assets/before.webp" width="380" alt="Original Page" /> | <img src="assets/after.webp" width="380" alt="Translated Page" /> |
-
----
-
-## Quick Start
-
-### Prerequisites
-- **Python:** 3.8 to 3.11 (Python 3.10 recommended).
-
-### Installation
-
-```bash
-git clone https://github.com/indravoyager/cypy.git
-cd cypy
-
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-# Linux / macOS
-source venv/bin/activate
-
-pip install -e .
-```
-
-### Usage
-
-```bash
-# GUI Mode (Default)
-cypy
-
-# CLI Mode
-cypy --cli
+```text
+├── app/
+│   ├── src/main/
+│   │   ├── java/com/cypy/app/
+│   │   │   ├── core/           # Translation Pipeline, YOLO, OpenCV, TextRenderer
+│   │   │   ├── core/providers/ # Gemini, OpenAI, Custom LLM Provider Integrations
+│   │   │   ├── data/           # Settings & DataStore Persistence
+│   │   │   ├── ui/             # Jetpack Compose Screens & MainViewModel
+│   │   │   └── util/           # JsonUtils & Helper utilities
+│   │   ├── assets/             # YOLO ONNX model (eyecypy.dat) & Custom Fonts
+│   │   └── AndroidManifest.xml
+│   └── build.gradle.kts
+├── opencv/                      # OpenCV 4.x Android SDK Module (Native JNI)
+├── build.gradle.kts
+├── settings.gradle.kts
+└── README.md
 ```
 
 ---
 
-## CLI Commands
+## 📦 Building the APK
 
-When running in **CLI Mode**, type commands directly into the prompt:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/kouzen-neo/cypy-mobile-native-kotlin.git
+   cd cypy-mobile-native-kotlin
+   ```
 
-| Command | Description |
-| :--- | :--- |
-| `lang` / `switch` | Change target language. |
-| `provider` / `api` | Switch LLM provider. |
-| `model` | Change active model name. |
-| `status` | Display current configuration. |
-| `tweak` | Open layout padding and filter adjustment menu. |
-| `help` | Show command list. |
-| `stop` / `exit` | Exit application. |
+2. Open the project in **Android Studio (Ladybug / Jellyfish or newer)**.
 
----
-
-## Standalone Executable (.exe)
-
-To build a standalone Windows executable:
-
-```bash
-python build.py
-```
+3. Build Debug or Release APK:
+   ```bash
+   ./gradlew assembleDebug
+   ```
+   The generated APK will be located at `app/build/outputs/apk/debug/app-debug.apk`.
 
 ---
 
-## License
-
-[MIT](LICENSE)
+## 📄 License
+This project is licensed under the MIT License.
