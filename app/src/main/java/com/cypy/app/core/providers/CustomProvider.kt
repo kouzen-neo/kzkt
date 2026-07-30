@@ -51,6 +51,7 @@ class CustomProvider(
             "model" to modelName,
             "temperature" to 0,
             "top_p" to 0.1,
+            "stream" to false,
             "messages" to listOf(mapOf(
                 "role" to "user",
                 "content" to listOf(
@@ -77,19 +78,53 @@ class CustomProvider(
                 }
 
                 val lenientReader = JsonReader(StringReader(body)).apply { isLenient = true }
-                val json = JsonParser.parseReader(lenientReader).asJsonObject
-                val choices = json.getAsJsonArray("choices")
-                if (choices != null && choices.size() > 0) {
-                    return@withContext choices[0].asJsonObject
-                        .getAsJsonObject("message")
-                        .get("content")?.asString
+                val json = JsonParser.parseReader(lenientReader)
+
+                if (!json.isJsonObject) {
+                    return@withContext body
                 }
+                val jsonObj = json.asJsonObject
+
+                // 1. Standard OpenAI format: choices[0].message.content
+                if (jsonObj.has("choices") && jsonObj.get("choices").isJsonArray) {
+                    val choices = jsonObj.getAsJsonArray("choices")
+                    if (choices.size() > 0 && choices[0].isJsonObject) {
+                        val choiceObj = choices[0].asJsonObject
+                        if (choiceObj.has("message") && choiceObj.get("message").isJsonObject) {
+                            val msgObj = choiceObj.getAsJsonObject("message")
+                            if (msgObj.has("content") && !msgObj.get("content").isJsonNull) {
+                                val contentElem = msgObj.get("content")
+                                if (contentElem.isJsonPrimitive) return@withContext contentElem.asString
+                                if (contentElem.isJsonArray) {
+                                    return@withContext contentElem.asJsonArray
+                                        .filter { it.isJsonObject && it.asJsonObject.has("text") }
+                                        .joinToString("\n") { it.asJsonObject.get("text").asString }
+                                }
+                            }
+                        } else if (choiceObj.has("text") && !choiceObj.get("text").isJsonNull) {
+                            return@withContext choiceObj.get("text").asString
+                        }
+                    }
+                }
+
+                // 2. Ollama / Direct response format
+                if (jsonObj.has("response") && !jsonObj.get("response").isJsonNull) {
+                    return@withContext jsonObj.get("response").asString
+                }
+                if (jsonObj.has("message") && jsonObj.get("message").isJsonObject) {
+                    val msg = jsonObj.getAsJsonObject("message")
+                    if (msg.has("content") && !msg.get("content").isJsonNull) {
+                        return@withContext msg.get("content").asString
+                    }
+                }
+
                 body
             } catch (e: java.io.IOException) {
                 throw RuntimeException("Custom network error: ${e.message}")
             }
         }
     }
+
 
     class ValueError(message: String) : Exception(message)
 }
