@@ -122,16 +122,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private var translationJob: kotlinx.coroutines.Job? = null
+
     fun startTranslation() {
-        if (selectedFiles.isEmpty() || translationActive.value) return
-        if (yolo == null || textRenderer == null) {
-            translationLog.add("[!] YOLO model not ready")
+        if (translationActive.value) return
+        val yolo = yolo ?: run {
+            translationLog.add("[!] YOLO model is not ready.")
             return
         }
-
-        val provider = createProvider()
-        if (provider == null) {
-            translationLog.add("[!] Invalid provider")
+        val provider = createProvider() ?: run {
+            translationLog.add("[!] Provider configuration is incomplete.")
             return
         }
 
@@ -149,55 +149,69 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         cypyFolder.mkdirs()
         val outputDir = cypyFolder.absolutePath
 
-        viewModelScope.launch {
-            val params = Config.TweakParams(
-                maxBubblesPerRequest = settings.value.maxBubblesPerRequest,
-                minRequestDelay = settings.value.minRequestDelay.toDouble(),
-                filterSfxMode = settings.value.filterSfxMode,
-                padXRatio = settings.value.padXRatio.toDouble(),
-                padYRatio = settings.value.padYRatio.toDouble(),
-                minPad = settings.value.minPad,
-            )
+        translationJob?.cancel()
+        translationJob = viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+            try {
+                val params = Config.TweakParams(
+                    maxBubblesPerRequest = settings.value.maxBubblesPerRequest,
+                    minRequestDelay = settings.value.minRequestDelay.toDouble(),
+                    filterSfxMode = settings.value.filterSfxMode,
+                    padXRatio = settings.value.padXRatio.toDouble(),
+                    padYRatio = settings.value.padYRatio.toDouble(),
+                    minPad = settings.value.minPad,
+                )
 
-            val pipeline = TranslationPipeline(
-                yolo = yolo,
-                provider = provider,
-                textRenderer = textRenderer!!,
-                params = params,
-                targetLanguage = settings.value.targetLanguage,
-                onProgress = { msg ->
-                    translationLog.add(msg)
-                    if (msg.contains("Done!")) {
-                        translationDone.value = translationDone.value + 1
-                        translationProgress.value = translationDone.value.toFloat() / translationTotal.value
+                val pipeline = TranslationPipeline(
+                    yolo = yolo,
+                    provider = provider,
+                    textRenderer = textRenderer!!,
+                    params = params,
+                    targetLanguage = settings.value.targetLanguage,
+                    onProgress = { msg ->
+                        translationLog.add(msg)
+                        if (msg.contains("Done!")) {
+                            translationDone.value = translationDone.value + 1
+                            translationProgress.value = translationDone.value.toFloat() / translationTotal.value
+                        }
+                    },
+                    isCancelled = { _cancelled }
+                )
+
+                for ((idx, path) in filesToProcess.withIndex()) {
+                    if (_cancelled) {
+                        translationLog.add("[Cancelled] Translation stopped by user.")
+                        break
                     }
-                },
-                isCancelled = { _cancelled }
-            )
+                    translationLog.add("[${idx + 1}/${filesToProcess.size}] Processing ${File(path).name}...")
+                    val result = pipeline.processSingleImage(path, outputDir)
+                    if (result.outputPath != null) {
+                        resultPaths.add(result.outputPath)
+                        currentPreviewPath.value = result.outputPath
+                    }
+                    translationDone.value = idx + 1
+                    translationProgress.value = (idx + 1).toFloat() / translationTotal.value
+                }
 
-            // Simple: process one by one (single-image mode)
-            for ((idx, path) in filesToProcess.withIndex()) {
-                if (_cancelled) {
-                    translationLog.add("[Cancelled] Translation stopped by user.")
-                    break
+
+                if (!_cancelled) {
+                    translationLog.add("Translation complete.")
                 }
-                translationLog.add("[${idx + 1}/${filesToProcess.size}] Processing ${File(path).name}...")
-                val result = pipeline.processSingleImage(path, outputDir)
-                if (result.outputPath != null) {
-                    resultPaths.add(result.outputPath)
-                    currentPreviewPath.value = result.outputPath
-                }
-                translationDone.value = idx + 1
-                translationProgress.value = (idx + 1).toFloat() / translationTotal.value
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                translationLog.add("[Cancelled] Translation stopped by user.")
+            } finally {
+                translationActive.value = false
             }
-
-            translationLog.add("Translation complete.")
-            translationActive.value = false
         }
     }
 
     fun cancelTranslation() {
         _cancelled = true
+        translationJob?.cancel()
+        translationJob = null
+        translationActive.value = false
+        if (!translationLog.lastOrNull().orEmpty().contains("[Cancelled]")) {
+            translationLog.add("[Cancelled] Translation stopped by user.")
+        }
     }
 
     fun addFiles(paths: List<String>) {
