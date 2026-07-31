@@ -13,8 +13,9 @@ A high-performance, native Android application for automatic manga and comic tra
 
 ## Key Features
 
-- **Native Mobile Performance:** Fully built with **Jetpack Compose**, **Kotlin Coroutines**, and **OpenCV C++ Native JNI** for instant UI responsiveness and low memory overhead.
-- **YOLO Speech Bubble Detection:** On-device speech bubble detection using **Microsoft ONNX Runtime Android SDK**.
+- **Native Mobile Performance:** Fully built with **Jetpack Compose**, **Kotlin Coroutines**, and **OpenCV C++ Native JNI** for instant UI responsiveness, zero native memory leaks, and low memory overhead.
+- **YOLO Speech Bubble Detection:** On-device speech bubble detection using **Microsoft ONNX Runtime Android SDK** with 3-stage cascade prediction.
+- **PDF Input & Output Support:** Render PDF pages directly to images and compile translated pages back into PDF documents using built-in Android `PdfRenderer` & `PdfDocument` (0 extra dependencies).
 - **Multi-Provider Vision LLM Support:**
   - **Google Gemini** (`gemini-3.1-flash-lite`, etc.)
   - **OpenAI** (`gpt-5.4-mini`, etc.)
@@ -22,6 +23,7 @@ A high-performance, native Android application for automatic manga and comic tra
   - **Zen / OpenCode Go**
   - **Custom / Local AI:** Dynamic Base URL & Auto-Model Detection for **Ollama**, **LM Studio**, **LocalAI**, and **vLLM** (with/without API Key).
 - **Smart Mosaic Batching:** Automatically crops and packs speech bubbles into high-density mosaics with vertical RTL (Manga) reading order to cut API costs by up to 80%.
+- **Robust JSON Resiliency:** Dual-tier JSON parser with `JsonReader` fallback to tolerate duplicate keys from LLMs without failing translation batches.
 - **Dynamic Text Rendering & Masking:** Automatic bubble masking (rounded rectangle / oval) with adaptive font sizing and word-wrapping (`Canvas` & `StaticLayout`).
 - **Public Gallery Storage:** Automatically saves translated pages directly to `/Download/CYPY/` so they instantly appear in your **Android Gallery** and **Google Photos**.
 - **Scoped Storage & PhotoPicker Safe:** Fully compatible with Android 10 to Android 15+ (no root or dangerous permissions required).
