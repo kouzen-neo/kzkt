@@ -1,4 +1,4 @@
-# CyPy Mobile - Native Android Kotlin
+# CyKt Kotlin Forked of Cypy
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9.0-purple.svg)](https://kotlinlang.org/)
