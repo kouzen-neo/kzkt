@@ -76,7 +76,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (pipelineLaunched) return
         pipelineLaunched = true
 
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             yolo = YoloOnnx(context)
             val ok = yolo!!.initialize()
             if (ok) {

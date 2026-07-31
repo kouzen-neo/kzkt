@@ -7,8 +7,6 @@ import android.util.Log
 import com.cypy.app.core.Config.TweakParams
 import com.cypy.app.core.providers.LlmProvider
 import com.cypy.app.util.JsonUtils
-import com.google.gson.GsonBuilder
-import com.google.gson.reflect.TypeToken
 import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.Mat
@@ -321,9 +319,7 @@ class TranslationPipeline(
 
                 if (result != null) {
                     val cleaned = JsonUtils.sanitizeJson(result)
-                    val type = object : TypeToken<Map<String, String>>() {}.type
-                    val parsed: Map<String, String> = GsonBuilder().setLenient().create().fromJson(cleaned, type)
-                    allTranslations.putAll(parsed)
+                    allTranslations.putAll(JsonUtils.parseTranslationMap(cleaned))
                 }
             } catch (e: Exception) {
                 val msg = e.message ?: "Unknown error"
@@ -506,8 +502,7 @@ class TranslationPipeline(
                 )
                 if (result != null) {
                     val cleaned = JsonUtils.sanitizeJson(result)
-                    val type = object : TypeToken<Map<String, String>>() {}.type
-                    allTranslations.putAll(GsonBuilder().setLenient().create().fromJson(cleaned, type))
+                    allTranslations.putAll(JsonUtils.parseTranslationMap(cleaned))
                 }
             } catch (e: Exception) {
                 onProgress("[!] ${provider.providerName} request failed: ${e.message}")

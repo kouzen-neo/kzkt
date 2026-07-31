@@ -107,4 +107,8 @@ dependencies {
     // Core Android
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.documentfile:documentfile:1.0.1")
+
+    // Tests
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("com.google.code.gson:gson:2.11.0")
 }
