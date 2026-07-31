@@ -1,34 +1,34 @@
-# 📱 CyPy Mobile - Native Android Kotlin
+# CyPy Mobile - Native Android Kotlin
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9.0-purple.svg)](https://kotlinlang.org/)
 [![Android SDK](https://img.shields.io/badge/Android-SDK%2026%2B-green.svg)](https://developer.android.com)
 
-A high-performance, native Android application for automatic manga and comic translation. 
+A high-performance, native Android application for automatic manga and comic translation.
 
-> 📌 **Fork & Porting Information:**  
+> **Fork & Porting Information:**
 > This project is a **Native Android Mobile Porting** of the original Python desktop application [indravoyager/cypy](https://github.com/indravoyager/cypy). It has been completely re-engineered from the ground up into a 100% Kotlin native mobile application optimized for Android smartphones and tablets.
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
-- **⚡ Native Mobile Performance:** Fully built with **Jetpack Compose**, **Kotlin Coroutines**, and **OpenCV C++ Native JNI** for instant UI responsiveness and low memory overhead.
-- **🎯 YOLO Speech Bubble Detection:** On-device speech bubble detection using **Microsoft ONNX Runtime Android SDK**.
-- **🤖 Multi-Provider Vision LLM Support:**
+- **Native Mobile Performance:** Fully built with **Jetpack Compose**, **Kotlin Coroutines**, and **OpenCV C++ Native JNI** for instant UI responsiveness and low memory overhead.
+- **YOLO Speech Bubble Detection:** On-device speech bubble detection using **Microsoft ONNX Runtime Android SDK**.
+- **Multi-Provider Vision LLM Support:**
   - **Google Gemini** (`gemini-3.1-flash-lite`, etc.)
   - **OpenAI** (`gpt-5.4-mini`, etc.)
   - **OpenRouter** (`qwen2.5-vl-72b-instruct`, etc.)
   - **Zen / OpenCode Go**
   - **Custom / Local AI:** Dynamic Base URL & Auto-Model Detection for **Ollama**, **LM Studio**, **LocalAI**, and **vLLM** (with/without API Key).
-- **🧩 Smart Mosaic Batching:** Automatically crops and packs speech bubbles into high-density mosaics with vertical RTL (Manga) reading order to cut API costs by up to 80%.
-- **🎨 Dynamic Text Rendering & Masking:** Automatic bubble masking (rounded rectangle / oval) with adaptive font sizing and word-wrapping (`Canvas` & `StaticLayout`).
-- **📂 Public Gallery Storage:** Automatically saves translated pages directly to `/Download/CYPY/` so they instantly appear in your **Android Gallery** and **Google Photos**.
-- **🛡️ Scoped Storage & PhotoPicker Safe:** Fully compatible with Android 10 to Android 15+ (no root or dangerous permissions required).
+- **Smart Mosaic Batching:** Automatically crops and packs speech bubbles into high-density mosaics with vertical RTL (Manga) reading order to cut API costs by up to 80%.
+- **Dynamic Text Rendering & Masking:** Automatic bubble masking (rounded rectangle / oval) with adaptive font sizing and word-wrapping (`Canvas` & `StaticLayout`).
+- **Public Gallery Storage:** Automatically saves translated pages directly to `/Download/CYPY/` so they instantly appear in your **Android Gallery** and **Google Photos**.
+- **Scoped Storage & PhotoPicker Safe:** Fully compatible with Android 10 to Android 15+ (no root or dangerous permissions required).
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Layer | Technologies & Libraries |
 | :--- | :--- |
@@ -42,33 +42,33 @@ A high-performance, native Android application for automatic manga and comic tra
 
 ---
 
-## 🏗️ Architecture & Pipeline Workflow
+## Architecture & Pipeline Workflow
 
 ```text
 [ Input Image / Manga Page ]
-           │
-           ▼
-[ 1. YOLO ONNX Bubble Detection ] ──► Detect Bounding Boxes
-           │
-           ▼
-[ 2. OpenCV Filtering & Smart Crop ] ──► Filter Giant Boxes, SFX, & Merge Overlaps
-           │
-           ▼
-[ 3. Mosaic Builder ] ──► Pack Crops into Vertical RTL Mosaic + Red ID Labels
-           │
-           ▼
-[ 4. Vision LLM Provider API ] ──► Gemini / OpenAI / Custom Local LLM
-           │
-           ▼
-[ 5. Text Renderer & Masking ] ──► Draw In-Bubble Mask + Auto-scaled Wrapped Text
-           │
-           ▼
-[ Output Image in /Download/CYPY/ ] ──► Instant Access in Android Gallery
+           |
+           v
+[ 1. YOLO ONNX Bubble Detection ] --> Detect Bounding Boxes
+           |
+           v
+[ 2. OpenCV Filtering & Smart Crop ] --> Filter Giant Boxes, SFX, & Merge Overlaps
+           |
+           v
+[ 3. Mosaic Builder ] --> Pack Crops into Vertical RTL Mosaic + Red ID Labels
+           |
+           v
+[ 4. Vision LLM Provider API ] --> Gemini / OpenAI / Custom Local LLM
+           |
+           v
+[ 5. Text Renderer & Masking ] --> Draw In-Bubble Mask + Auto-scaled Wrapped Text
+           |
+           v
+[ Output Image in /Download/CYPY/ ] --> Instant Access in Android Gallery
 ```
 
 ---
 
-## 🛠️ Project Structure
+## Project Structure
 
 ```text
 ├── app/
@@ -90,7 +90,7 @@ A high-performance, native Android application for automatic manga and comic tra
 
 ---
 
-## 📦 How to Build the APK
+## How to Build the APK
 
 1. **Clone the Repository:**
    ```bash
@@ -110,11 +110,11 @@ A high-performance, native Android application for automatic manga and comic tra
 
 ---
 
-## 🙏 Credits & Acknowledgments
+## Credits & Acknowledgments
 - Original Python Application by [indravoyager/cypy](https://github.com/indravoyager/cypy).
 - Native Android Kotlin Porting by [kouzen-neo](https://github.com/kouzen-neo).
 
 ---
 
-## 📄 License
+## License
 This project is licensed under the [MIT License](LICENSE).
