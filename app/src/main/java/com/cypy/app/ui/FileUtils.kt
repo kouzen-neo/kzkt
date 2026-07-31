@@ -92,8 +92,9 @@ object FileUtils {
                 file
             )
 
+            val mime = if (filePath.endsWith(".pdf", ignoreCase = true)) "application/pdf" else "image/*"
             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "image/*")
+                setDataAndType(uri, mime)
                 addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             }

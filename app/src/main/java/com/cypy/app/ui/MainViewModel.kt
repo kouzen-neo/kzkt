@@ -15,6 +15,8 @@ import com.cypy.app.core.TranslationPipeline
 import com.cypy.app.core.YoloOnnx
 import com.cypy.app.core.providers.*
 import com.cypy.app.data.SettingsRepository
+import com.cypy.app.util.PdfExporter
+import com.cypy.app.util.PdfImporter
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
@@ -177,19 +179,62 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     isCancelled = { _cancelled }
                 )
 
+                var completed = 0
+                // extract + translate + reassemble for PDFs, 1 step for images
+                val totalSteps = filesToProcess.fold(0) { acc, f ->
+                    acc + if (f.endsWith(".pdf", ignoreCase = true)) 3 else 1
+                }
+                val tempDir = File(getApplication<Application>().cacheDir, "pdf_input")
+                val translatedPages = mutableListOf<String>()
+
                 for ((idx, path) in filesToProcess.withIndex()) {
                     if (_cancelled) {
                         translationLog.add("[Cancelled] Translation stopped by user.")
                         break
                     }
-                    translationLog.add("[${idx + 1}/${filesToProcess.size}] Processing ${File(path).name}...")
-                    val result = pipeline.processSingleImage(path, outputDir)
-                    if (result.outputPath != null) {
-                        resultPaths.add(result.outputPath)
-                        currentPreviewPath.value = result.outputPath
+
+                    if (path.endsWith(".pdf", ignoreCase = true)) {
+                        // ── PDF: extract pages → batch translate → reassemble ──
+                        translationLog.add("[${idx + 1}/${filesToProcess.size}] Opening PDF ${File(path).name}...")
+                        val pdfFile = File(path)
+                        val pages = PdfImporter.extractPdfToImages(pdfFile, tempDir)
+                        if (pages.isEmpty()) {
+                            translationLog.add("[!] Could not read PDF: ${File(path).name}")
+                            translationDone.value = ++completed
+                            translationProgress.value = completed.toFloat() / totalSteps
+                            continue
+                        }
+                        translationLog.add("  Extracted ${pages.size} pages from PDF.")
+
+                        val results = pipeline.processImageBatch(pages, outputDir)
+                        val translated = results.mapNotNull { it.outputPath }
+                        translationLog.add("  Translated ${translated.size}/${pages.size} pages.")
+
+                        val outputPdf = File(cypyFolder, "${pdfFile.nameWithoutExtension}.pdf")
+                        PdfExporter.createPdfFromImages(translated, outputPdf)
+                        if (outputPdf.exists()) {
+                            translationLog.add("  PDF saved: ${outputPdf.absolutePath}")
+                            resultPaths.add(outputPdf.absolutePath)
+                            currentPreviewPath.value = outputPdf.absolutePath
+                        } else {
+                            translationLog.add("[!] Failed to assemble PDF.")
+                        }
+
+                        // Cleanup temporary page images
+                        pages.forEach { File(it).delete() }
+                        translationDone.value = ++completed
+                        translationProgress.value = completed.toFloat() / totalSteps
+                    } else {
+                        // ── Single image ──
+                        translationLog.add("[${idx + 1}/${filesToProcess.size}] Processing ${File(path).name}...")
+                        val result = pipeline.processSingleImage(path, outputDir)
+                        if (result.outputPath != null) {
+                            resultPaths.add(result.outputPath)
+                            currentPreviewPath.value = result.outputPath
+                        }
+                        translationDone.value = ++completed
+                        translationProgress.value = completed.toFloat() / totalSteps
                     }
-                    translationDone.value = idx + 1
-                    translationProgress.value = (idx + 1).toFloat() / translationTotal.value
                 }
 
 

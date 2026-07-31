@@ -130,6 +130,82 @@ class TranslationPipeline(
         return if (b.isNotEmpty()) "${first}_${b.toIntOrNull() ?: b}" else first.toString()
     }
 
+    /**
+     * Draw translations onto the canvas. Shared by single-image and batch rendering so
+     * both cover the original text with a white blurred patch (or a full patch for flat boxes).
+     * Returns the number of bubbles actually rendered.
+     */
+    private fun renderTranslations(
+        canvas: Canvas,
+        translations: Map<String, String>,
+        coordinateMap: Map<String, IntArray>,
+        imgWidth: Int,
+        imgHeight: Int,
+    ): Int {
+        var count = 0
+        for ((num, text) in translations) {
+            if (num !in coordinateMap || text.uppercase() == "SKIP" || text.isBlank()) continue
+
+            val (x1, y1, x2, y2) = coordinateMap[num]!!
+            val w = maxOf(1, x2 - x1)
+            val h = maxOf(1, y2 - y1)
+            val ratio = w.toDouble() / h
+            val areaRatio = (w * h).toDouble() / maxOf(1, imgWidth * imgHeight)
+
+            // Skip suspicious boxes (same logic as Python)
+            if (ratio >= 3.2 && w >= imgWidth * 0.35) continue
+            if (areaRatio >= 0.035 && ratio >= 2.8) continue
+
+            val suspiciousFlat = ratio >= params.rasioBoxGepeng &&
+                w >= imgWidth * params.lebarBoxGepengRatio &&
+                h <= imgHeight * params.tinggiBoxGepengRatio
+
+            if (params.pakaiPatchUntukBoxGepeng && suspiciousFlat) {
+                textRenderer.renderTextInBubble(canvas, coordinateMap[num]!!, text,
+                    backgroundPatch = true, targetLanguage = targetLanguage)
+            } else {
+                // Background: blurred white patch, drawn on a bubble-sized overlay
+                // (not a full-page bitmap — avoids allocating ~13 MB per bubble)
+                val marginX = (w * params.maskMarginRatio).toInt()
+                val marginY = (h * params.maskMarginRatio).toInt()
+                val cornerRadius = maxOf(6, minOf(w, h) / 3)
+                val blur = 6f
+
+                val overlay = Bitmap.createBitmap(
+                    (x2 - x1) + marginX * 2 + (blur * 2).toInt(),
+                    (y2 - y1) + marginY * 2 + (blur * 2).toInt(),
+                    Bitmap.Config.ARGB_8888
+                )
+                overlay.eraseColor(Color.TRANSPARENT)
+                val overlayCanvas = Canvas(overlay)
+
+                val bgPaint = Paint().apply {
+                    color = Color.WHITE
+                    isAntiAlias = true
+                }
+                val pad = blur
+                overlayCanvas.drawRoundRect(
+                    RectF(
+                        pad + marginX, pad + marginY,
+                        pad + marginX + (x2 - x1), pad + marginY + (y2 - y1)
+                    ),
+                    cornerRadius.toFloat(), cornerRadius.toFloat(), bgPaint
+                )
+
+                // Apply blur (simple Box blur since RenderScript is deprecated)
+                val blurPaint = Paint().apply {
+                    maskFilter = BlurMaskFilter(blur, BlurMaskFilter.Blur.NORMAL)
+                }
+                canvas.drawBitmap(overlay, (x1 - marginX - pad).toFloat(), (y1 - marginY - pad).toFloat(), blurPaint)
+
+                textRenderer.renderTextInBubble(canvas, coordinateMap[num]!!, text,
+                    backgroundPatch = false, targetLanguage = targetLanguage)
+            }
+            count++
+        }
+        return count
+    }
+
     private suspend fun processBitmap(
         bitmap: Bitmap, inputPath: String, outputDir: String
     ): PipelineResult {
@@ -276,66 +352,13 @@ class TranslationPipeline(
             if (id != null) normalizedTranslations[id] = text
         }
 
-        for ((num, text) in normalizedTranslations) {
-            if (num in coordinateMap && text.uppercase() != "SKIP" && text.isNotBlank()) {
-                val (x1, y1, x2, y2) = coordinateMap[num]!!
-                val w = maxOf(1, x2 - x1)
-                val h = maxOf(1, y2 - y1)
-                val ratio = w.toDouble() / h
-                val areaRatio = (w * h).toDouble() / maxOf(1, imgWidth * imgHeight)
-
-                // Skip suspicious boxes (same logic as Python)
-                if (ratio >= 3.2 && w >= imgWidth * 0.35) continue
-                if (areaRatio >= 0.035 && ratio >= 2.8) continue
-
-                val suspiciousFlat = ratio >= params.rasioBoxGepeng &&
-                    w >= imgWidth * params.lebarBoxGepengRatio &&
-                    h <= imgHeight * params.tinggiBoxGepengRatio
-
-                if (params.pakaiPatchUntukBoxGepeng && suspiciousFlat) {
-                    textRenderer.renderTextInBubble(canvas, coordinateMap[num]!!, text,
-                        backgroundPatch = true, targetLanguage = targetLanguage)
-                } else {
-                    // Background: blurred white patch, drawn on a bubble-sized overlay
-                    // (not a full-page bitmap — avoids allocating ~13 MB per bubble)
-                    val marginX = (w * params.maskMarginRatio).toInt()
-                    val marginY = (h * params.maskMarginRatio).toInt()
-                    val cornerRadius = maxOf(6, minOf(w, h) / 3)
-                    val blur = 6f
-
-                    val overlay = Bitmap.createBitmap(
-                        (x2 - x1) + marginX * 2 + (blur * 2).toInt(),
-                        (y2 - y1) + marginY * 2 + (blur * 2).toInt(),
-                        Bitmap.Config.ARGB_8888
-                    )
-                    overlay.eraseColor(Color.TRANSPARENT)
-                    val overlayCanvas = Canvas(overlay)
-
-                    val bgPaint = Paint().apply {
-                        color = Color.WHITE
-                        isAntiAlias = true
-                    }
-                    val pad = blur
-                    overlayCanvas.drawRoundRect(
-                        RectF(
-                            pad + marginX, pad + marginY,
-                            pad + marginX + (x2 - x1), pad + marginY + (y2 - y1)
-                        ),
-                        cornerRadius.toFloat(), cornerRadius.toFloat(), bgPaint
-                    )
-
-                    // Apply blur (simple Box blur since RenderScript is deprecated)
-                    val blurPaint = Paint().apply {
-                        maskFilter = BlurMaskFilter(blur, BlurMaskFilter.Blur.NORMAL)
-                    }
-                    canvas.drawBitmap(overlay, (x1 - marginX - pad).toFloat(), (y1 - marginY - pad).toFloat(), blurPaint)
-
-                    textRenderer.renderTextInBubble(canvas, coordinateMap[num]!!, text,
-                        backgroundPatch = false, targetLanguage = targetLanguage)
-                }
-                translatedCount++
-            }
-        }
+        translatedCount = renderTranslations(
+            canvas = canvas,
+            translations = normalizedTranslations,
+            coordinateMap = coordinateMap,
+            imgWidth = imgWidth,
+            imgHeight = imgHeight,
+        )
 
         val outputPath = MosaicBuilder.makeOutputPath(inputPath, targetLanguage, outputDir)
         saveBitmap(resultBitmap, outputPath)
@@ -503,21 +526,24 @@ class TranslationPipeline(
                 continue
             }
 
-            var translatedCount = 0
-            val canvas = Canvas(page.pil)
-
-            for ((id, text) in allTranslations) {
-                if (id in page.coordMap && text.uppercase() != "SKIP" && text.isNotBlank()) {
-                    val (x1, y1, x2, y2) = page.coordMap[id]!!
-                    textRenderer.renderTextInBubble(canvas, intArrayOf(x1, y1, x2, y2), text,
-                        backgroundPatch = false, targetLanguage = targetLanguage)
-                    translatedCount++
-                }
+            // Skip pages whose output already exists — avoid re-translating on re-runs
+            val pageOutputPath = MosaicBuilder.makeOutputPath(page.path, targetLanguage, outputDir)
+            if (File(pageOutputPath).exists()) {
+                results.add(PipelineResult(pageOutputPath, alreadyDone = true))
+                continue
             }
 
-            val outputPath = MosaicBuilder.makeOutputPath(page.path, targetLanguage, outputDir)
-            saveBitmap(page.pil, outputPath)
-            results.add(PipelineResult(outputPath, bubblesFound = page.crops.size, bubblesTranslated = translatedCount))
+            val canvas = Canvas(page.pil)
+            val translatedCount = renderTranslations(
+                canvas = canvas,
+                translations = allTranslations,
+                coordinateMap = page.coordMap,
+                imgWidth = page.imgWidth,
+                imgHeight = page.imgHeight,
+            )
+
+            saveBitmap(page.pil, pageOutputPath)
+            results.add(PipelineResult(pageOutputPath, bubblesFound = page.crops.size, bubblesTranslated = translatedCount))
         }
 
         return results

@@ -51,7 +51,7 @@ fun MainScreen(
 
     // File picker
     val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetMultipleContents()
+        contract = ActivityResultContracts.OpenMultipleDocuments()
     ) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
             val paths = uris.mapNotNull { FileUtils.getPathFromUri(context, it) }
@@ -175,9 +175,9 @@ fun MainScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                // Pick file
+                // Pick file (images + PDF)
                 OutlinedButton(
-                    onClick = { filePickerLauncher.launch("image/*") },
+                    onClick = { filePickerLauncher.launch(arrayOf("image/*", "application/pdf")) },
                     enabled = !viewModel.translationActive.value,
                     modifier = Modifier.weight(1f),
                 ) {
@@ -349,30 +349,72 @@ fun MainScreen(
                             color = androidx.compose.ui.graphics.Color.Black
                         ) {
                             Box(modifier = Modifier.fillMaxSize()) {
-                                var scale by remember { mutableStateOf(1f) }
-                                var offsetX by remember { mutableStateOf(0f) }
-                                var offsetY by remember { mutableStateOf(0f) }
-
-                                val state = androidx.compose.foundation.gestures.rememberTransformableState { zoomChange, panChange, _ ->
-                                    scale = (scale * zoomChange).coerceIn(0.8f, 5f)
-                                    offsetX += panChange.x
-                                    offsetY += panChange.y
-                                }
-
-                                coil.compose.AsyncImage(
-                                    model = java.io.File(currentPath),
-                                    contentDescription = "Translated Manga Page",
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .graphicsLayer(
-                                            scaleX = scale,
-                                            scaleY = scale,
-                                            translationX = offsetX,
-                                            translationY = offsetY
+                                if (currentPath.endsWith(".pdf", ignoreCase = true)) {
+                                    // PDF: no image to zoom — show a document card instead
+                                    Column(
+                                        modifier = Modifier.align(Alignment.Center),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Icon(
+                                            Icons.Default.PictureAsPdf,
+                                            contentDescription = "PDF",
+                                            tint = androidx.compose.ui.graphics.Color(0xFFE53935),
+                                            modifier = Modifier.size(80.dp)
                                         )
-                                        .transformable(state = state)
-                                )
+                                        Spacer(Modifier.height(12.dp))
+                                        Text(
+                                            currentPath.substringAfterLast('/'),
+                                            color = androidx.compose.ui.graphics.Color.White,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(Modifier.height(12.dp))
+                                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Button(
+                                                onClick = { FileUtils.openFileInSystemViewer(context, currentPath) }
+                                            ) {
+                                                Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                Spacer(Modifier.width(4.dp))
+                                                Text("Buka PDF")
+                                            }
+                                            OutlinedButton(
+                                                onClick = { FileUtils.shareFile(context, currentPath) },
+                                                colors = ButtonDefaults.outlinedButtonColors(
+                                                    contentColor = androidx.compose.ui.graphics.Color.White
+                                                )
+                                            ) {
+                                                Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                Spacer(Modifier.width(4.dp))
+                                                Text("Bagikan")
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    var scale by remember { mutableStateOf(1f) }
+                                    var offsetX by remember { mutableStateOf(0f) }
+                                    var offsetY by remember { mutableStateOf(0f) }
+
+                                    val state = androidx.compose.foundation.gestures.rememberTransformableState { zoomChange, panChange, _ ->
+                                        scale = (scale * zoomChange).coerceIn(0.8f, 5f)
+                                        offsetX += panChange.x
+                                        offsetY += panChange.y
+                                    }
+
+                                    coil.compose.AsyncImage(
+                                        model = java.io.File(currentPath),
+                                        contentDescription = "Translated Manga Page",
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .graphicsLayer(
+                                                scaleX = scale,
+                                                scaleY = scale,
+                                                translationX = offsetX,
+                                                translationY = offsetY
+                                            )
+                                            .transformable(state = state)
+                                    )
+                                }
 
 
                                 // Top bar with close and share button
