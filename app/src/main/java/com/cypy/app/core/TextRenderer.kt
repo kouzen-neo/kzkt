@@ -11,7 +11,9 @@ import java.util.regex.Pattern
  */
 class TextRenderer(private val context: Context) {
 
-    private val fontCache = mutableMapOf<Pair<String, Int>, Typeface>()
+    // Cache base Typeface per font file, not per (font, size) — the size is applied via Paint.textSize.
+    // Keeps 2 entries (Komika Axis + KosugiMaru) instead of unbounded growth from dynamic font sizing.
+    private val fontCache = mutableMapOf<String, Typeface>()
 
     // Font paths
     private val FONT_MANGA = "fonts/Komika Axis.ttf"
@@ -29,12 +31,10 @@ class TextRenderer(private val context: Context) {
     private fun getTypeface(text: String, size: Int, language: String? = null): Typeface {
         val isNonLatin = hasNonLatin(text)
         val fontPath = if (isNonLatin) FONT_UNIVERSAL else FONT_MANGA
-        val key = Pair(fontPath, size)
 
-        return fontCache.getOrPut(key) {
+        return fontCache.getOrPut(fontPath) {
             try {
-                val path = if (isNonLatin) FONT_UNIVERSAL else FONT_MANGA
-                Typeface.createFromAsset(context.assets, path)
+                Typeface.createFromAsset(context.assets, fontPath)
             } catch (e: Exception) {
                 Log.w("CYPY", "Font load failed for $fontPath: ${e.message}, using default")
                 Typeface.DEFAULT

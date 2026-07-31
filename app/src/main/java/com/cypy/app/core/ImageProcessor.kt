@@ -213,32 +213,39 @@ object ImageProcessor {
             if (crop.empty()) return@filter false
 
             val gray = Mat()
-            Imgproc.cvtColor(crop, gray, Imgproc.COLOR_BGR2GRAY)
-
-            // Black threshold
             val blackMask = Mat()
-            Imgproc.threshold(gray, blackMask, 79.0, 255.0, Imgproc.THRESH_BINARY_INV)
-            val blackRatio = Core.countNonZero(blackMask).toDouble() / gray.total()
-
-            // White threshold
             val whiteMask = Mat()
-            Imgproc.threshold(gray, whiteMask, 220.0, 255.0, Imgproc.THRESH_BINARY)
-            val whiteRatio = Core.countNonZero(whiteMask).toDouble() / gray.total()
-
-            // Edge detection
             val edges = Mat()
-            Imgproc.Canny(gray, edges, 80.0, 160.0)
-            val edgeRatio = Core.countNonZero(edges).toDouble() / gray.total()
+            try {
+                Imgproc.cvtColor(crop, gray, Imgproc.COLOR_BGR2GRAY)
 
-            // Safe: mostly white = text bubble
-            if (whiteRatio >= whiteSafe) return@filter true
+                // Black threshold
+                Imgproc.threshold(gray, blackMask, 79.0, 255.0, Imgproc.THRESH_BINARY_INV)
+                val blackRatio = Core.countNonZero(blackMask).toDouble() / gray.total()
 
-            val isSfxOrImage = areaRatio > 0.018 && blackRatio > blackThr && edgeRatio > edgeThr
-            val isFlatSuspicious = ratio > 2.2 && w > imgWidth * 0.30 &&
-                edgeRatio > maxOf(0.07, edgeThr - 0.03) && whiteRatio < whiteSafe
-            val isLargeSuspicious = areaRatio > 0.045 && whiteRatio < 0.55 && edgeRatio > 0.075
+                // White threshold
+                Imgproc.threshold(gray, whiteMask, 220.0, 255.0, Imgproc.THRESH_BINARY)
+                val whiteRatio = Core.countNonZero(whiteMask).toDouble() / gray.total()
 
-            !(isSfxOrImage || isFlatSuspicious || isLargeSuspicious)
+                // Edge detection
+                Imgproc.Canny(gray, edges, 80.0, 160.0)
+                val edgeRatio = Core.countNonZero(edges).toDouble() / gray.total()
+
+                // Safe: mostly white = text bubble
+                if (whiteRatio >= whiteSafe) return@filter true
+
+                val isSfxOrImage = areaRatio > 0.018 && blackRatio > blackThr && edgeRatio > edgeThr
+                val isFlatSuspicious = ratio > 2.2 && w > imgWidth * 0.30 &&
+                    edgeRatio > maxOf(0.07, edgeThr - 0.03) && whiteRatio < whiteSafe
+                val isLargeSuspicious = areaRatio > 0.045 && whiteRatio < 0.55 && edgeRatio > 0.075
+
+                !(isSfxOrImage || isFlatSuspicious || isLargeSuspicious)
+            } finally {
+                edges.release()
+                whiteMask.release()
+                blackMask.release()
+                gray.release()
+            }
         }
     }
 
@@ -322,11 +329,15 @@ object ImageProcessor {
         val maskY2 = minOf(crop.rows(), localY2 + params.maskMargin)
 
         val result = Mat.ones(crop.size(), crop.type())
-        Core.multiply(result, Scalar.all(255.0), result)
         val region = result.submat(Rect(maskX1, maskY1, maskX2 - maskX1, maskY2 - maskY1))
         val srcRegion = crop.submat(Rect(maskX1, maskY1, maskX2 - maskX1, maskY2 - maskY1))
-        srcRegion.copyTo(region)
-
+        try {
+            Core.multiply(result, Scalar.all(255.0), result)
+            srcRegion.copyTo(region)
+        } finally {
+            srcRegion.release()
+            region.release()
+        }
         return result
     }
 

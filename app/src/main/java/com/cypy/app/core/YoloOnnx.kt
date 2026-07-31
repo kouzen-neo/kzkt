@@ -117,7 +117,19 @@ class YoloOnnx(
             if (modelFile.exists()) {
                 modelSize = modelFile.length().toInt()
                 modelFile.copyTo(onnxDirect, overwrite = true)
+            } else {
+                return null
             }
+
+            // Clean up stale temp files from interrupted previous runs (keep the cached one)
+            try {
+                context.cacheDir.listFiles()?.forEach { f ->
+                    val name = f.name
+                    if (name.startsWith("eyecypy_") && name.endsWith(".onnx") && name != modelFile.name) {
+                        f.delete()
+                    }
+                }
+            } catch (_: Exception) {}
 
             modelFile
         } catch (e: Exception) {
@@ -149,6 +161,8 @@ class YoloOnnx(
 
         val pixels = IntArray(Constants.YOLO_INPUT_SIZE * Constants.YOLO_INPUT_SIZE)
         padded.getPixels(pixels, 0, Constants.YOLO_INPUT_SIZE, 0, 0, Constants.YOLO_INPUT_SIZE, Constants.YOLO_INPUT_SIZE)
+        padded.recycle()
+        resized.recycle()
 
         val inputData = FloatArray(3 * Constants.YOLO_INPUT_SIZE * Constants.YOLO_INPUT_SIZE)
         val area = Constants.YOLO_INPUT_SIZE * Constants.YOLO_INPUT_SIZE
@@ -159,11 +173,10 @@ class YoloOnnx(
             inputData[2 * area + i] = (pixel and 0xFF) / 255.0f
         }
 
-        resized.recycle()
         return Triple(inputData, doubleArrayOf(scale, scale), doubleArrayOf(dw.toDouble(), dh.toDouble()))
     }
 
-    fun predict(bitmap: Bitmap): List<Detection> {
+    fun predict(bitmap: Bitmap, confThreshold: Double = this.confThreshold, iouThreshold: Double = this.iouThreshold): List<Detection> {
         val env = ortEnv ?: throw IllegalStateException("ONNX Runtime not initialized")
         val session = ortSession ?: throw IllegalStateException("Model not loaded")
 
@@ -172,14 +185,22 @@ class YoloOnnx(
         val (ratioW, ratioH) = ratios[0] to ratios[1]
 
         val inputShape = longArrayOf(1, 3, Constants.YOLO_INPUT_SIZE.toLong(), Constants.YOLO_INPUT_SIZE.toLong())
-        val inputTensor = OnnxTensor.createTensor(env, FloatBuffer.wrap(inputData), inputShape)
         val inputName = session.inputNames.iterator().next()
 
         Log.d("CYPY/YOLO", "Running inference on ${bitmap.width}x${bitmap.height}...")
-        val result = session.run(mapOf(inputName to inputTensor))
-        val onnxVal = result.get(0) as OnnxTensor
-        val fb = onnxVal.floatBuffer
-        val bufSize = fb.capacity()
+        // inputTensor & result hold native C++ handles — must be closed to avoid leaking memory on every page.
+        // The output tensor's floatBuffer is a DIRECT buffer into native memory that becomes invalid once the
+        // result is closed, so copy it to a heap array while still inside the use{} block.
+        val outputData: FloatArray
+        OnnxTensor.createTensor(env, FloatBuffer.wrap(inputData), inputShape).use { inputTensor ->
+            session.run(mapOf(inputName to inputTensor)).use { result ->
+                val onnxVal = result.get(0) as OnnxTensor
+                val fb = onnxVal.floatBuffer
+                outputData = FloatArray(fb.capacity())
+                fb.get(outputData)
+            }
+        }
+        val bufSize = outputData.size
         Log.d("CYPY/YOLO", "Output buffer size: $bufSize floats")
 
         // Determine grid dimensions from buffer size
@@ -200,8 +221,8 @@ class YoloOnnx(
         // Normal ONNX output is (1, 84, 8400) = data[c * grid + g]
         // Transposed would be (1, 8400, 84) = data[g * channels + c]
         // Detect by looking at conf value at position [4 * grid + 0] vs [0 * channels + 4]
-        val sampleConfDirect = if (bufSize > 4 * grid) fb.get(4 * grid) else -1f
-        val sampleConfTransposed = if (bufSize > 4) fb.get(4) else -1f
+        val sampleConfDirect = if (bufSize > 4 * grid) outputData[4 * grid] else -1f
+        val sampleConfTransposed = if (bufSize > 4) outputData[4] else -1f
         val confIsValid = sampleConfDirect in 0.01f..1.0f
         val transposedConfIsValid = sampleConfTransposed in 0.01f..1.0f
 
@@ -212,7 +233,7 @@ class YoloOnnx(
             transposed = true
         } else if (confIsValid && transposedConfIsValid) {
             // Both look plausible — check if channel 5+ has reasonable values when accessed transposed
-            transposed = fb.get(5) in 0.0f..1.0f && fb.get(4 * grid + 5) !in 0.0f..1.0f
+            transposed = outputData[5] in 0.0f..1.0f && outputData[4 * grid + 5] !in 0.0f..1.0f
         } else {
             transposed = false
         }
@@ -236,17 +257,17 @@ class YoloOnnx(
             val boxH: Double
 
             if (transposed) {
-                conf = fb.get(g * channels + 4)
-                xc = fb.get(g * channels + 0).toDouble()
-                yc = fb.get(g * channels + 1).toDouble()
-                boxW = fb.get(g * channels + 2).toDouble()
-                boxH = fb.get(g * channels + 3).toDouble()
+                conf = outputData[g * channels + 4]
+                xc = outputData[g * channels + 0].toDouble()
+                yc = outputData[g * channels + 1].toDouble()
+                boxW = outputData[g * channels + 2].toDouble()
+                boxH = outputData[g * channels + 3].toDouble()
             } else {
-                conf = fb.get(4 * grid + g)
-                xc = fb.get(0 * grid + g).toDouble()
-                yc = fb.get(1 * grid + g).toDouble()
-                boxW = fb.get(2 * grid + g).toDouble()
-                boxH = fb.get(3 * grid + g).toDouble()
+                conf = outputData[4 * grid + g]
+                xc = outputData[0 * grid + g].toDouble()
+                yc = outputData[1 * grid + g].toDouble()
+                boxW = outputData[2 * grid + g].toDouble()
+                boxH = outputData[3 * grid + g].toDouble()
             }
 
             if (conf < confThreshold) continue
