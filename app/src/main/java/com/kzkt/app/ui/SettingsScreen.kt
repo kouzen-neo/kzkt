@@ -42,6 +42,8 @@ import com.kzkt.app.ui.component.Material3SettingsItem
 import com.kzkt.app.ui.theme.DefaultThemeColor
 import kotlinx.coroutines.launch
 
+import androidx.compose.foundation.lazy.LazyColumn
+
 // Seed-color presets for the accent picker (Material You keeps the default crimson).
 private val ACCENT_PRESETS = listOf(
     DefaultThemeColor,
@@ -63,157 +65,173 @@ fun SettingsScreen(
     onThemeColorChange: (Color) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(scrollState)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(
-            "Settings",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(top = 8.dp),
-        )
+        item {
+            Text(
+                "Settings",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
 
         // ── Appearance ──
-        Material3SettingsGroup(
-            title = "Appearance",
-            items = listOf(
-                Material3SettingsItem(
-                    leadingContent = { SettingsIcon(Icons.Outlined.DarkMode) },
-                    title = { Text("Dark mode") },
-                    description = { Text("Use the dark color scheme") },
-                    trailingContent = {
-                        Switch(checked = darkTheme, onCheckedChange = onDarkThemeChange)
-                    },
+        item {
+            Material3SettingsGroup(
+                title = "Appearance",
+                items = listOf(
+                    Material3SettingsItem(
+                        leadingContent = { SettingsIcon(Icons.Outlined.DarkMode) },
+                        title = { Text("Dark mode") },
+                        description = { Text("Use the dark color scheme") },
+                        trailingContent = {
+                            Switch(checked = darkTheme, onCheckedChange = onDarkThemeChange)
+                        },
+                    ),
+                    Material3SettingsItem(
+                        leadingContent = { SettingsIcon(Icons.Outlined.BrightnessLow) },
+                        title = { Text("Pure black") },
+                        description = { Text("True black background in dark mode") },
+                        enabled = darkTheme,
+                        trailingContent = {
+                            Switch(
+                                checked = pureBlack,
+                                onCheckedChange = onPureBlackChange,
+                                enabled = darkTheme,
+                            )
+                        },
+                    ),
+                    Material3SettingsItem(
+                        leadingContent = { SettingsIcon(Icons.Outlined.Palette) },
+                        title = { Text("Accent color") },
+                        description = {
+                            Text(if (themeColor == DefaultThemeColor) "System / Material You (default)" else "Custom seed color")
+                        },
+                        trailingContent = { AccentColorRow(themeColor, onThemeColorChange) },
+                    ),
                 ),
-                Material3SettingsItem(
-                    leadingContent = { SettingsIcon(Icons.Outlined.BrightnessLow) },
-                    title = { Text("Pure black") },
-                    description = { Text("True black background in dark mode") },
-                    enabled = darkTheme,
-                    trailingContent = {
-                        Switch(
-                            checked = pureBlack,
-                            onCheckedChange = onPureBlackChange,
-                            enabled = darkTheme,
-                        )
-                    },
-                ),
-                Material3SettingsItem(
-                    leadingContent = { SettingsIcon(Icons.Outlined.Palette) },
-                    title = { Text("Accent color") },
-                    description = {
-                        Text(if (themeColor == DefaultThemeColor) "System / Material You (default)" else "Custom seed color")
-                    },
-                    trailingContent = { AccentColorRow(themeColor, onThemeColorChange) },
-                ),
-            ),
-        )
+            )
+        }
 
         // ── Provider ──
-        Column {
-            Text(
-                "Provider",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
-            )
-            val selectedProvider = viewModel.settings.value.llmProvider
-            ChipsRow(
-                chips = Config.PROVIDER_REGISTRY.values.map { it.key to it.displayName },
-                currentValue = selectedProvider,
-                onValueUpdate = { key -> scope.launch { viewModel.settingsRepo.saveProvider(key) } },
-            )
-            Config.PROVIDER_REGISTRY[selectedProvider]?.let { meta ->
+        item {
+            Column {
                 Text(
-                    meta.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 12.dp, top = 6.dp),
+                    "Provider",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
                 )
+                val selectedProvider = viewModel.settings.value.llmProvider
+                ChipsRow(
+                    chips = Config.PROVIDER_REGISTRY.values.map { it.key to it.displayName },
+                    currentValue = selectedProvider,
+                    onValueUpdate = { key -> scope.launch { viewModel.settingsRepo.saveProvider(key) } },
+                )
+                Config.PROVIDER_REGISTRY[selectedProvider]?.let { meta ->
+                    Text(
+                        meta.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 12.dp, top = 6.dp),
+                    )
+                }
             }
         }
 
         // ── Target Language ──
-        Column {
-            Text(
-                "Target Language",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
-            )
-            val language = viewModel.settings.value.targetLanguage
-            ChipsRow(
-                chips = Config.LANGUAGE_CHOICES.map { it to it },
-                currentValue = language,
-                onValueUpdate = { lang -> scope.launch { viewModel.settingsRepo.saveLanguage(lang) } },
-            )
+        item {
+            Column {
+                Text(
+                    "Target Language",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
+                )
+                val language = viewModel.settings.value.targetLanguage
+                ChipsRow(
+                    chips = Config.LANGUAGE_CHOICES.map { it to it },
+                    currentValue = language,
+                    onValueUpdate = { lang -> scope.launch { viewModel.settingsRepo.saveLanguage(lang) } },
+                )
+            }
         }
 
         // ── API Keys ──
-        Column {
-            Text(
-                "API Keys",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
-            )
-            Material3SettingsGroup(
-                items = listOf(
-                    ApiKeyItem("Gemini", viewModel, "geminiApiKey", Icons.Outlined.GppGood),
-                    ApiKeyItem("OpenAI", viewModel, "openaiApiKey", Icons.Outlined.AutoAwesome),
-                    ApiKeyItem("OpenRouter", viewModel, "openrouterApiKey", Icons.Outlined.Router),
-                    ApiKeyItem("Zen", viewModel, "zenApiKey", Icons.Outlined.Bolt),
-                    ApiKeyItem("OpenCode Go", viewModel, "opencodegoApiKey", Icons.Outlined.Code),
-                    ApiKeyItem("Custom", viewModel, "customApiKey", Icons.Outlined.SettingsEthernet),
-                ),
-            )
+        item {
+            Column {
+                Text(
+                    "API Keys",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
+                )
+                Material3SettingsGroup(
+                    items = listOf(
+                        ApiKeyItem("Gemini", viewModel, "geminiApiKey", Icons.Outlined.GppGood),
+                        ApiKeyItem("OpenAI", viewModel, "openaiApiKey", Icons.Outlined.AutoAwesome),
+                        ApiKeyItem("OpenRouter", viewModel, "openrouterApiKey", Icons.Outlined.Router),
+                        ApiKeyItem("Zen", viewModel, "zenApiKey", Icons.Outlined.Bolt),
+                        ApiKeyItem("OpenCode Go", viewModel, "opencodegoApiKey", Icons.Outlined.Code),
+                        ApiKeyItem("Custom", viewModel, "customApiKey", Icons.Outlined.SettingsEthernet),
+                    ),
+                )
+            }
         }
 
         // ── Model ──
-        Column {
-            Text(
-                "Model",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
-            )
-            ModelSection(viewModel)
+        item {
+            Column {
+                Text(
+                    "Model",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
+                )
+                ModelSection(viewModel)
 
-            val selectedProvider = viewModel.settings.value.llmProvider
-            if (selectedProvider == "custom") {
-                CustomUrlSection(viewModel)
+                val selectedProvider = viewModel.settings.value.llmProvider
+                if (selectedProvider == "custom") {
+                    CustomUrlSection(viewModel)
+                }
             }
         }
 
         // ── Tweak Parameters ──
-        Column {
-            Text(
-                "Tweak Parameters",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
-            )
-            TweakParamsSection(viewModel)
+        item {
+            Column {
+                Text(
+                    "Tweak Parameters",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
+                )
+                TweakParamsSection(viewModel)
+            }
         }
 
         // ── SFX Filter Mode ──
-        Column {
-            Text(
-                "SFX Filter Mode",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
-            )
-            SfxFilterSection(viewModel)
+        item {
+            Column {
+                Text(
+                    "SFX Filter Mode",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
+                )
+                SfxFilterSection(viewModel)
+            }
         }
 
-        Spacer(Modifier.height(32.dp))
+        item {
+            Spacer(Modifier.height(32.dp))
+        }
     }
 }
 
