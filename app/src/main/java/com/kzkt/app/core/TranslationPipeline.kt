@@ -520,10 +520,13 @@ class TranslationPipeline(
                     val scale = params.skalaPotonganMosaik
                     val cropBitmap = ImageProcessor.matToBitmap(maskedMat)
                     maskedMat.release()
-                    val scaled = if (scale != 1.0) Bitmap.createScaledBitmap(cropBitmap,
-                        maxOf(1, (cropBitmap.width * scale).toInt()),
-                        maxOf(1, (cropBitmap.height * scale).toInt()), true)
-                    else cropBitmap
+                    val scaled = if (scale != 1.0) {
+                        val s = Bitmap.createScaledBitmap(cropBitmap,
+                            maxOf(1, (cropBitmap.width * scale).toInt()),
+                            maxOf(1, (cropBitmap.height * scale).toInt()), true)
+                        if (s != cropBitmap && !cropBitmap.isRecycled) cropBitmap.recycle()
+                        s
+                    } else cropBitmap
 
                     crops.add(id to scaled)
                     coordMap[id] = box
@@ -576,6 +579,13 @@ class TranslationPipeline(
                     throw e
                 }
                 onProgress("[!] ${provider.providerName} request failed: ${e.message}")
+            } finally {
+                if (!mosaic.isRecycled) mosaic.recycle()
+                for (item in shrunk) {
+                    if (item.bitmap != cropItems.firstOrNull { it.id == item.id }?.bitmap && !item.bitmap.isRecycled) {
+                        item.bitmap.recycle()
+                    }
+                }
             }
         }
 
@@ -610,6 +620,12 @@ class TranslationPipeline(
 
             saveBitmap(page.pil, pageOutputPath)
             results.add(PipelineResult(pageOutputPath, bubblesFound = page.crops.size, bubblesTranslated = translatedCount))
+            if (!page.pil.isRecycled) page.pil.recycle()
+        }
+
+        // Clean up crop bitmaps
+        for ((_, bmp) in allCrops) {
+            if (!bmp.isRecycled) bmp.recycle()
         }
 
         return results

@@ -159,7 +159,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
                 )
-                val selectedProvider = viewModel.settings.value.llmProvider
+                val selectedProvider by remember { derivedStateOf { viewModel.settings.value.llmProvider } }
                 ChipsRow(
                     chips = Config.PROVIDER_REGISTRY.values.map { it.key to it.displayName },
                     currentValue = selectedProvider,
@@ -185,7 +185,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 8.dp, top = 8.dp),
                 )
-                val language = viewModel.settings.value.targetLanguage
+                val language by remember { derivedStateOf { viewModel.settings.value.targetLanguage } }
                 ChipsRow(
                     chips = Config.LANGUAGE_CHOICES.map { it to it },
                     currentValue = language,
@@ -227,7 +227,7 @@ fun SettingsScreen(
                 )
                 ModelSection(viewModel)
 
-                val selectedProvider = viewModel.settings.value.llmProvider
+                val selectedProvider by remember { derivedStateOf { viewModel.settings.value.llmProvider } }
                 if (selectedProvider == "custom") {
                     CustomUrlSection(viewModel)
                 }

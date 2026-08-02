@@ -221,7 +221,7 @@ object ImageProcessor {
                 val whiteMask = Mat()
                 val edges = Mat()
                 try {
-                    Imgproc.cvtColor(crop, gray, Imgproc.COLOR_BGR2GRAY)
+                    Imgproc.cvtColor(crop, gray, Imgproc.COLOR_RGBA2GRAY)
 
                     // Black threshold
                     Imgproc.threshold(gray, blackMask, 79.0, 255.0, Imgproc.THRESH_BINARY_INV)
@@ -273,7 +273,7 @@ object ImageProcessor {
 
         val gray = Mat()
         try {
-            Imgproc.cvtColor(crop, gray, Imgproc.COLOR_BGR2GRAY)
+            Imgproc.cvtColor(crop, gray, Imgproc.COLOR_RGBA2GRAY)
             val meanVal = Core.mean(gray).`val`[0]
             return if (meanVal < 128.0) {
                 android.graphics.Color.BLACK
@@ -405,7 +405,7 @@ object ImageProcessor {
         val textMask = Mat()
         val inpainted = Mat()
         try {
-            Imgproc.cvtColor(crop, gray, Imgproc.COLOR_BGR2GRAY)
+            Imgproc.cvtColor(crop, gray, Imgproc.COLOR_RGBA2GRAY)
             val meanBrightness = Core.mean(gray).`val`[0]
             if (meanBrightness > 128) {
                 // White background: threshold dark text strokes

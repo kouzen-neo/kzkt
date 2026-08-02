@@ -72,9 +72,7 @@ fun Material3SettingsGroup(
                 }
 
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateContentSize(),
+                    modifier = Modifier.fillMaxWidth(),
                     shape = shape,
                     colors = CardDefaults.cardColors(
                         containerColor = if (!useLowContrast) {

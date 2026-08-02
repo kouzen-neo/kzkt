@@ -93,7 +93,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             yolo = YoloOnnx(context)
             val ok = yolo!!.initialize()
+            val renderer = TextRenderer(context)
             post {
+                textRenderer = renderer
                 if (ok) {
                     yoloReady.value = true
                     translationLog.add("YOLO model loaded successfully")
@@ -102,7 +104,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     translationLog.add("[!] Failed to load YOLO model")
                 }
             }
-            textRenderer = TextRenderer(context)
         }
     }
 
@@ -226,16 +227,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         if (pages.isEmpty()) {
                             post {
                                 translationLog.add("[!] Could not read PDF: $fileName")
-                                translationDone.value = ++completed
+                                completed += 3
+                                translationDone.value = completed
                                 translationProgress.value = completed.toFloat() / totalSteps
                             }
                             continue
                         }
-                        post { translationLog.add("  Extracted ${pages.size} pages from PDF.") }
+                        post {
+                            translationLog.add("  Extracted ${pages.size} pages from PDF.")
+                            completed++
+                            translationDone.value = completed
+                            translationProgress.value = completed.toFloat() / totalSteps
+                        }
 
                         val results = pipeline.processImageBatch(pages, outputDir)
                         val translated = results.mapNotNull { it.outputPath }
-                        post { translationLog.add("  Translated ${translated.size}/${pages.size} pages.") }
+                        post {
+                            translationLog.add("  Translated ${translated.size}/${pages.size} pages.")
+                            completed++
+                            translationDone.value = completed
+                            translationProgress.value = completed.toFloat() / totalSteps
+                        }
 
                         val outputPdf = File(outputFolder, "${pdfFile.nameWithoutExtension}.pdf")
                         PdfExporter.createPdfFromImages(translated, outputPdf)
@@ -254,7 +266,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         // Cleanup temporary page images
                         pages.forEach { File(it).delete() }
                         post {
-                            translationDone.value = ++completed
+                            completed++
+                            translationDone.value = completed
                             translationProgress.value = completed.toFloat() / totalSteps
                         }
                     } else {
