@@ -128,5 +128,40 @@ object FileUtils {
             android.util.Log.e("KZKT", "Failed to share file: ${e.message}")
         }
     }
+
+    /**
+     * Copy translated file to public MediaStore Download/Pictures gallery.
+     */
+    fun saveToMediaStore(context: Context, filePath: String) {
+        try {
+            val file = File(filePath)
+            if (!file.exists()) return
+
+            val fileName = file.name
+            val isPdf = fileName.endsWith(".pdf", ignoreCase = true)
+
+            val values = android.content.ContentValues().apply {
+                put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(android.provider.MediaStore.MediaColumns.MIME_TYPE, if (isPdf) "application/pdf" else "image/png")
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, "${android.os.Environment.DIRECTORY_DOWNLOADS}/KZKT")
+                }
+            }
+
+            val targetUri = if (isPdf || android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
+                android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI
+            } else {
+                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            }
+
+            context.contentResolver.insert(targetUri, values)?.let { uri ->
+                context.contentResolver.openOutputStream(uri)?.use { out ->
+                    file.inputStream().use { input -> input.copyTo(out) }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("KZKT", "Failed to copy to MediaStore: ${e.message}")
+        }
+    }
 }
 

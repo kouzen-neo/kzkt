@@ -162,8 +162,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         translationDone.value = 0
 
         val filesToProcess = selectedFiles.toList()
-        val downloadFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val outputFolder = File(downloadFolder, "KZKT")
+        val baseDir = getApplication<Application>().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+            ?: getApplication<Application>().filesDir
+        val outputFolder = File(baseDir, "KZKT")
         outputFolder.mkdirs()
         val outputDir = outputFolder.absolutePath
 
@@ -239,6 +240,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         val outputPdf = File(outputFolder, "${pdfFile.nameWithoutExtension}.pdf")
                         PdfExporter.createPdfFromImages(translated, outputPdf)
                         if (outputPdf.exists()) {
+                            FileUtils.saveToMediaStore(getApplication(), outputPdf.absolutePath)
                             post {
                                 translationLog.add("  PDF saved: ${outputPdf.absolutePath}")
                                 resultPaths.add(outputPdf.absolutePath)
@@ -261,6 +263,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         post { translationLog.add("[${idx + 1}/${filesToProcess.size}] Processing $fileName...") }
                         val result = pipeline.processSingleImage(path, outputDir)
                         if (result.outputPath != null) {
+                            FileUtils.saveToMediaStore(getApplication(), result.outputPath)
                             post {
                                 resultPaths.add(result.outputPath)
                                 currentPreviewPath.value = result.outputPath
