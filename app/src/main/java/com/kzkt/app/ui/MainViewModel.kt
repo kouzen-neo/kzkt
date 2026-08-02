@@ -49,6 +49,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Result
     val resultPaths = mutableStateListOf<String>()
     val currentPreviewPath = mutableStateOf<String?>(null)
+    val lastResultForEditing = mutableStateOf<TranslationPipeline.PipelineResult?>(null)
+    val showInteractiveEditor = mutableStateOf(false)
 
     // YOLO model state
     val yoloReady = mutableStateOf(false)
@@ -260,6 +262,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             post {
                                 resultPaths.add(result.outputPath)
                                 currentPreviewPath.value = result.outputPath
+                                lastResultForEditing.value = result
                             }
                             recordHistory(fileName, result.outputPath, 1)
                         }

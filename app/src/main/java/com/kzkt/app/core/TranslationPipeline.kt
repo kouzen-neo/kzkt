@@ -36,6 +36,9 @@ class TranslationPipeline(
         val bubblesTranslated: Int = 0,
         val failed: Boolean = false,
         val alreadyDone: Boolean = false,
+        val originalBitmap: Bitmap? = null,
+        val translations: Map<String, String> = emptyMap(),
+        val coordinateMap: Map<String, IntArray> = emptyMap(),
     )
 
     /**
@@ -402,6 +405,9 @@ class TranslationPipeline(
             outputPath = outputPath,
             bubblesFound = cropItems.size,
             bubblesTranslated = translatedCount,
+            originalBitmap = bitmap,
+            translations = normalizedTranslations,
+            coordinateMap = coordinateMap,
         )
     }
 

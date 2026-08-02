@@ -435,6 +435,15 @@ private fun ResultPreview(
                         Text("View in App", fontSize = 12.sp)
                     }
 
+                    if (viewModel.lastResultForEditing.value != null && !currentPath.endsWith(".pdf", ignoreCase = true)) {
+                        IconButton(
+                            onClick = { viewModel.showInteractiveEditor.value = true },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit Text", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+
                     OutlinedButton(
                         onClick = { FileUtils.openFileInSystemViewer(context, currentPath) },
                         modifier = Modifier.weight(1f),
@@ -459,6 +468,27 @@ private fun ResultPreview(
             FullscreenImageViewer(
                 path = currentPath,
                 onDismiss = { showFullscreenViewer = false },
+            )
+        }
+
+        val lastResult = viewModel.lastResultForEditing.value
+        if (viewModel.showInteractiveEditor.value && lastResult?.originalBitmap != null) {
+            com.kzkt.app.ui.component.InteractiveEditorDialog(
+                originalBitmap = lastResult.originalBitmap,
+                translations = lastResult.translations,
+                coordinateMap = lastResult.coordinateMap,
+                textRenderer = com.kzkt.app.core.TextRenderer(context),
+                targetLanguage = viewModel.settings.value.targetLanguage,
+                onDismiss = { viewModel.showInteractiveEditor.value = false },
+                onSave = { updatedBitmap, _ ->
+                    if (lastResult.outputPath != null) {
+                        val file = File(lastResult.outputPath)
+                        java.io.FileOutputStream(file).use { stream ->
+                            updatedBitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream)
+                        }
+                    }
+                    viewModel.showInteractiveEditor.value = false
+                }
             )
         }
     }
