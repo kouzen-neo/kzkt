@@ -130,13 +130,14 @@ class TranslationPipeline(
 
     /**
      * Draw translations onto the canvas. Shared by single-image and batch rendering so
-     * both cover the original text with a white blurred patch (or a full patch for flat boxes).
+     * both cover the original text with a white/adaptive blurred patch (or a full patch for flat boxes).
      * Returns the number of bubbles actually rendered.
      */
     private fun renderTranslations(
         canvas: Canvas,
         translations: Map<String, String>,
         coordinateMap: Map<String, IntArray>,
+        bubbleColors: Map<String, Int> = emptyMap(),
         imgWidth: Int,
         imgHeight: Int,
     ): Int {
@@ -149,6 +150,7 @@ class TranslationPipeline(
             val h = maxOf(1, y2 - y1)
             val ratio = w.toDouble() / h
             val areaRatio = (w * h).toDouble() / maxOf(1, imgWidth * imgHeight)
+            val bgColor = bubbleColors[num] ?: Color.WHITE
 
             // Skip suspicious boxes (same logic as Python)
             if (ratio >= 3.2 && w >= imgWidth * 0.35) continue
@@ -160,9 +162,9 @@ class TranslationPipeline(
 
             if (params.pakaiPatchUntukBoxGepeng && suspiciousFlat) {
                 textRenderer.renderTextInBubble(canvas, coordinateMap[num]!!, text,
-                    backgroundPatch = true, targetLanguage = targetLanguage)
+                    backgroundPatch = true, targetLanguage = targetLanguage, bgColor = bgColor)
             } else {
-                // Background: blurred white patch, drawn on a bubble-sized overlay
+                // Background: blurred adaptive patch, drawn on a bubble-sized overlay
                 // (not a full-page bitmap — avoids allocating ~13 MB per bubble)
                 val marginX = (w * params.maskMarginRatio).toInt()
                 val marginY = (h * params.maskMarginRatio).toInt()
@@ -178,7 +180,7 @@ class TranslationPipeline(
                 val overlayCanvas = Canvas(overlay)
 
                 val bgPaint = Paint().apply {
-                    color = Color.WHITE
+                    color = bgColor
                     isAntiAlias = true
                 }
                 val pad = blur
@@ -190,14 +192,14 @@ class TranslationPipeline(
                     cornerRadius.toFloat(), cornerRadius.toFloat(), bgPaint
                 )
 
-                // Apply blur (simple Box blur since RenderScript is deprecated)
+                // Apply blur
                 val blurPaint = Paint().apply {
                     maskFilter = BlurMaskFilter(blur, BlurMaskFilter.Blur.NORMAL)
                 }
-                canvas.drawBitmap(overlay, (x1 - marginX - pad).toFloat(), (y1 - marginY - pad).toFloat(), blurPaint)
+                canvas.drawBitmap(overlay, x1 - marginX - pad, y1 - marginY - pad, blurPaint)
 
                 textRenderer.renderTextInBubble(canvas, coordinateMap[num]!!, text,
-                    backgroundPatch = false, targetLanguage = targetLanguage)
+                    backgroundPatch = false, targetLanguage = targetLanguage, bgColor = bgColor)
             }
             count++
         }
@@ -214,8 +216,6 @@ class TranslationPipeline(
         val imgWidth = mat.cols()
 
         // ── YOLO Detection (3-stage cascade) ──
-        // Each stage uses a different conf/iou threshold (0.28 → 0.18 → 0.10),
-        // catching progressively weaker bubbles — matching the Python cascade.
         val rawBoxes = mutableListOf<IntArray>()
         try {
             for ((conf, iou) in Constants.YOLO_PREDICTION_STAGES) {
@@ -249,13 +249,15 @@ class TranslationPipeline(
             return PipelineResult(outputPath)
         }
 
-        // ── Crop extraction ──
+        // ── Crop extraction & background color detection ──
         val cropItems = mutableListOf<MosaicBuilder.CropItem>()
         val coordinateMap = mutableMapOf<String, IntArray>()
+        val bubbleColors = mutableMapOf<String, Int>()
 
         val cropMatFull = ImageProcessor.bitmapToMat(bitmap)
         try {
             for ((order, box) in filtered.withIndex()) {
+                val id = (order + 1).toString()
                 val (x1, y1, x2, y2) = box
                 val boxW = maxOf(1, x2 - x1)
                 val boxH = maxOf(1, y2 - y1)
@@ -266,6 +268,10 @@ class TranslationPipeline(
                 val (cropX1, cropY1, cropX2, cropY2) = ImageProcessor.smartCropBounds(
                     box, filtered, imgWidth, imgHeight, padX, padY, params
                 )
+
+                // Detect background color (dark vs white)
+                val bgColor = ImageProcessor.detectBubbleBackgroundColor(cropMatFull, box)
+                bubbleColors[id] = bgColor
 
                 val cropMat = cropMatFull.submat(org.opencv.core.Rect(cropX1, cropY1, cropX2 - cropX1, cropY2 - cropY1))
                 val maskedMat = ImageProcessor.maskOutsideBubble(cropMat, cropX1, cropY1, x1, y1, x2, y2, params)
@@ -284,8 +290,8 @@ class TranslationPipeline(
                     )
                 } else cropBitmap
 
-                cropItems.add(MosaicBuilder.CropItem((order + 1).toString(), scaledBitmap))
-                coordinateMap[(order + 1).toString()] = box
+                cropItems.add(MosaicBuilder.CropItem(id, scaledBitmap))
+                coordinateMap[id] = box
             }
         } finally {
             cropMatFull.release()
@@ -322,6 +328,9 @@ class TranslationPipeline(
                     allTranslations.putAll(JsonUtils.parseTranslationMap(cleaned))
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException || isCancelled()) {
+                    throw e
+                }
                 val msg = e.message ?: "Unknown error"
                 if (msg == "API_KEY_ERROR") {
                     onProgress("[!] API key for ${provider.providerName} is expired or invalid.")
@@ -341,7 +350,6 @@ class TranslationPipeline(
         val canvas = Canvas(resultBitmap)
 
         var translatedCount = 0
-        // Convert all JSON keys to id strings, tolerating LLM variants like "1", "1_2", "ID 1", "1."
         val normalizedTranslations = mutableMapOf<String, String>()
         for ((key, text) in allTranslations) {
             val id = normalizeIdKey(key)
@@ -352,6 +360,7 @@ class TranslationPipeline(
             canvas = canvas,
             translations = normalizedTranslations,
             coordinateMap = coordinateMap,
+            bubbleColors = bubbleColors,
             imgWidth = imgWidth,
             imgHeight = imgHeight,
         )
@@ -387,6 +396,7 @@ class TranslationPipeline(
             val imgHeight: Int,
             val crops: MutableList<Pair<String, Bitmap>>,
             val coordMap: MutableMap<String, IntArray>,
+            val bubbleColors: MutableMap<String, Int> = mutableMapOf(),
             val alreadyDone: Boolean = false,
             val failed: Boolean = false,
         )
@@ -433,6 +443,7 @@ class TranslationPipeline(
             val resultBmp = bitmap.copy(Bitmap.Config.ARGB_8888, true)
             val crops = mutableListOf<Pair<String, Bitmap>>()
             val coordMap = mutableMapOf<String, IntArray>()
+            val bubbleColors = mutableMapOf<String, Int>()
 
             val cropMatFull = ImageProcessor.bitmapToMat(bitmap)
             try {
@@ -443,6 +454,9 @@ class TranslationPipeline(
                     val padX = maxOf(params.minPad, (boxW * params.padXRatio).toInt())
                     val padY = maxOf(params.minPad, (boxH * params.padYRatio).toInt())
                     val id = "${idx + 1}_${order + 1}"
+
+                    val bgColor = ImageProcessor.detectBubbleBackgroundColor(cropMatFull, box)
+                    bubbleColors[id] = bgColor
 
                     val (cropX1, cropY1, cropX2, cropY2) = ImageProcessor.smartCropBounds(
                         box, filtered, imgWidth, imgHeight, padX, padY, params)
@@ -466,7 +480,7 @@ class TranslationPipeline(
             }
 
             pageDataList.add(PageData(imgPath, resultBmp, Canvas(resultBmp), imgWidth, imgHeight,
-                crops.toMutableList(), coordMap))
+                crops.toMutableList(), coordMap, bubbleColors))
         }
 
         // Phase 2: Collect all crops across pages and batch
@@ -505,6 +519,9 @@ class TranslationPipeline(
                     allTranslations.putAll(JsonUtils.parseTranslationMap(cleaned))
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException || isCancelled()) {
+                    throw e
+                }
                 onProgress("[!] ${provider.providerName} request failed: ${e.message}")
             }
         }
@@ -533,6 +550,7 @@ class TranslationPipeline(
                 canvas = canvas,
                 translations = allTranslations,
                 coordinateMap = page.coordMap,
+                bubbleColors = page.bubbleColors,
                 imgWidth = page.imgWidth,
                 imgHeight = page.imgHeight,
             )

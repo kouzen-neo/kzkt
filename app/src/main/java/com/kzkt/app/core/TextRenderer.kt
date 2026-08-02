@@ -103,6 +103,14 @@ class TextRenderer(private val context: Context) {
         return lines.joinToString("\n")
     }
 
+    private fun isDarkColor(color: Int): Boolean {
+        val r = Color.red(color)
+        val g = Color.green(color)
+        val b = Color.blue(color)
+        val luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        return luminance < 128.0
+    }
+
     // ── Main Text Rendering ────────────────────────────────────────
 
     /**
@@ -112,8 +120,9 @@ class TextRenderer(private val context: Context) {
      * @param canvas target canvas (drawn on a Bitmap)
      * @param bubbleRect [x1, y1, x2, y2] bubble coordinates
      * @param text translated text
-     * @param backgroundPatch draw white patch behind text
+     * @param backgroundPatch draw patch behind text
      * @param targetLanguage language code
+     * @param bgColor background color for bubble patch and text contrast
      */
     fun renderTextInBubble(
         canvas: Canvas,
@@ -121,6 +130,7 @@ class TextRenderer(private val context: Context) {
         text: String,
         backgroundPatch: Boolean = false,
         targetLanguage: String? = null,
+        bgColor: Int = Color.WHITE,
     ) {
         val (x1, y1, x2, y2) = bubbleRect
         val boxWidth = maxOf(1, x2 - x1)
@@ -131,7 +141,7 @@ class TextRenderer(private val context: Context) {
         val isJapanese = langKey == "japanese" || langKey == "jepang"
 
         if (isJapanese) {
-            renderJapaneseVertical(canvas, text, x1, y1, x2, y2, settings, backgroundPatch)
+            renderJapaneseVertical(canvas, text, x1, y1, x2, y2, settings, backgroundPatch, bgColor)
             return
         }
 
@@ -143,13 +153,14 @@ class TextRenderer(private val context: Context) {
         val minFontSize = settings.minFont
         val maxFontSize = settings.maxFont
 
+        var low = minFontSize
+        var high = maxFontSize
         var bestFontSize = minFontSize
-        var bestWrappedText = displayText
         var bestSpacing = 1f
-        var bestScore = -1f
 
-        // Search for best font size
-        for (fSize in maxFontSize downTo minFontSize) {
+        // Binary Search for optimal font size (O(log N) instead of linear scan)
+        while (low <= high) {
+            val fSize = (low + high) / 2
             val paint = Paint().apply {
                 typeface = getTypeface(displayText, fSize)
                 textSize = fSize.toFloat()
@@ -166,39 +177,18 @@ class TextRenderer(private val context: Context) {
                 if (lineWidth > maxLineWidth) maxLineWidth = lineWidth
                 totalHeight += paint.textSize + spacing
             }
-            totalHeight -= spacing // Remove spacing after last line
+            totalHeight -= spacing
 
             if (maxLineWidth <= maxW && totalHeight <= maxH) {
-                val fillW = maxLineWidth / maxOf(1f, maxW)
-                val fillH = totalHeight / maxOf(1f, maxH)
-                val score = fSize * 10f + fillW + fillH
-                if (score > bestScore) {
-                    bestScore = score
-                    bestFontSize = fSize
-                    bestWrappedText = wrapped
-                    bestSpacing = spacing
-                }
-                break
-            } else if (fSize > bestFontSize * 1.5) {
-                val overflowRatio = maxOf(
-                    maxLineWidth / maxOf(1f, maxW),
-                    totalHeight / maxOf(1f, maxH)
-                )
-                if (overflowRatio <= 1.15f) {
-                    val fillW = maxLineWidth / maxOf(1f, maxW)
-                    val fillH = totalHeight / maxOf(1f, maxH)
-                    val score = fSize * 10f + fillW + fillH - overflowRatio * 50f
-                    if (score > bestScore) {
-                        bestScore = score
-                        bestFontSize = fSize
-                        bestWrappedText = wrapped
-                        bestSpacing = spacing
-                    }
-                }
+                bestFontSize = fSize
+                bestSpacing = spacing
+                low = fSize + 1
+            } else {
+                high = fSize - 1
             }
         }
 
-        // Final render
+        // Final render calculation
         bestFontSize = maxOf(minFontSize, (bestFontSize * settings.fontScale).toInt())
         val finalPaint = Paint().apply {
             typeface = getTypeface(displayText, bestFontSize)
@@ -222,6 +212,9 @@ class TextRenderer(private val context: Context) {
         val centerY = y1 + (boxHeight - textHeight) / 2f
 
         val strokeW = maxOf(1f, bestFontSize / 11f)
+        val isDarkBg = isDarkColor(bgColor)
+        val strokeColor = if (isDarkBg) Color.BLACK else Color.WHITE
+        val textColor = if (isDarkBg) Color.WHITE else Color.BLACK
 
         // Background patch
         if (backgroundPatch) {
@@ -232,34 +225,35 @@ class TextRenderer(private val context: Context) {
                 centerX + textWidth + pad,
                 centerY + textHeight + pad
             )
-            val radius = maxOf(4f, bestFontSize / 2f).toFloat()
+            val radius = maxOf(4f, bestFontSize / 2f)
+            val patchPaint = Paint().apply { color = bgColor }
             try {
-                canvas.drawRoundRect(rect, radius, radius, Paint().apply { color = Color.WHITE })
+                canvas.drawRoundRect(rect, radius, radius, patchPaint)
             } catch (e: Exception) {
-                canvas.drawRect(rect, Paint().apply { color = Color.WHITE })
+                canvas.drawRect(rect, patchPaint)
             }
         }
 
-        // Draw each line with stroke
+        // Draw each line with stroke & fill
         var currentY = centerY
         for (line in finalLines) {
             val lineWidth = finalPaint.measureText(line)
             val lineX = centerX + (textWidth - lineWidth) / 2f
 
-            // Stroke (white outline)
+            // Stroke (outline for contrast)
             val strokePaint = Paint(finalPaint).apply {
                 style = Paint.Style.STROKE
                 strokeWidth = strokeW
                 strokeCap = Paint.Cap.ROUND
                 strokeJoin = Paint.Join.ROUND
-                color = Color.WHITE
+                color = strokeColor
             }
             canvas.drawText(line, lineX, currentY - finalPaint.fontMetrics.ascent, strokePaint)
 
-            // Fill (black text)
+            // Fill (text color)
             val fillPaint = Paint(finalPaint).apply {
                 style = Paint.Style.FILL
-                color = Color.BLACK
+                color = textColor
             }
             canvas.drawText(line, lineX, currentY - finalPaint.fontMetrics.ascent, fillPaint)
 
@@ -276,6 +270,7 @@ class TextRenderer(private val context: Context) {
         x2: Int, y2: Int,
         settings: TextSettings,
         backgroundPatch: Boolean,
+        bgColor: Int = Color.WHITE,
     ) {
         val cleanText = text.replace(" ", "").replace("\n", "")
         val boxWidth = maxOf(1, x2 - x1)
@@ -286,10 +281,14 @@ class TextRenderer(private val context: Context) {
         val minFontSize = settings.minFont
         val maxFontSize = settings.maxFont
 
+        var low = minFontSize
+        var high = maxFontSize
         var bestFontSize = minFontSize
         var bestColumns = listOf<String>()
 
-        for (fSize in maxFontSize downTo minFontSize) {
+        // Binary Search for optimal Japanese font size
+        while (low <= high) {
+            val fSize = (low + high) / 2
             val charH = fSize
             val charW = fSize
             val charsPerCol = maxOf(1, (maxH / charH).toInt())
@@ -299,7 +298,9 @@ class TextRenderer(private val context: Context) {
             if (totalW <= maxW) {
                 bestFontSize = fSize
                 bestColumns = columns
-                break
+                low = fSize + 1
+            } else {
+                high = fSize - 1
             }
         }
 
@@ -325,17 +326,21 @@ class TextRenderer(private val context: Context) {
         val startX = x1 + (boxWidth - actualW) / 2f + charW
         val startY = y1 + (boxHeight - actualH) / 2f
 
+        val isDarkBg = isDarkColor(bgColor)
+        val strokeColor = if (isDarkBg) Color.BLACK else Color.WHITE
+        val textColor = if (isDarkBg) Color.WHITE else Color.BLACK
+
         val strokeW = maxOf(1f, bestFontSize / 11f)
         val strokePaint = Paint(paint).apply {
             style = Paint.Style.STROKE
             strokeWidth = strokeW
             strokeCap = Paint.Cap.ROUND
             strokeJoin = Paint.Join.ROUND
-            color = Color.WHITE
+            color = strokeColor
         }
         val fillPaint = Paint(paint).apply {
             style = Paint.Style.FILL
-            color = Color.BLACK
+            color = textColor
         }
 
         // Background patch
@@ -347,7 +352,7 @@ class TextRenderer(private val context: Context) {
                 startX + charW + pad,
                 startY + actualH + pad
             )
-            canvas.drawRect(rect, Paint().apply { color = Color.WHITE })
+            canvas.drawRect(rect, Paint().apply { color = bgColor })
         }
 
         // Draw columns right-to-left
@@ -370,12 +375,10 @@ class TextRenderer(private val context: Context) {
                 val cx = curX + offsetX
                 val cy = curY + offsetY
 
-                // Stroke (white outline) — drawn as fill with stroke for outline effect
                 strokePaint.style = Paint.Style.FILL_AND_STROKE
-                strokePaint.color = Color.WHITE
+                strokePaint.color = strokeColor
                 canvas.drawText(displayChar.toString(), cx, cy - fontMetrics.ascent, strokePaint)
 
-                // Fill (black text on top)
                 canvas.drawText(displayChar.toString(), cx, cy - fontMetrics.ascent, fillPaint)
 
                 curY += charH

@@ -48,6 +48,9 @@ class RateLimiter(
                 synchronized(lock) { lastCallTimeMs = System.currentTimeMillis() }
                 return apiCall()
             } catch (ex: Exception) {
+                if (ex is kotlinx.coroutines.CancellationException || isCancelled()) {
+                    throw ex
+                }
                 val errStr = ex.message?.lowercase() ?: ""
 
                 // ── 1. Rate Limit (HTTP 429) ──

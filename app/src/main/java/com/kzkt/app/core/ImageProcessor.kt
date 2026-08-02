@@ -210,42 +210,81 @@ object ImageProcessor {
             if (isSmall) return@filter true
 
             val crop = mat.submat(Rect(x1, y1, w, h))
-            if (crop.empty()) return@filter false
-
-            val gray = Mat()
-            val blackMask = Mat()
-            val whiteMask = Mat()
-            val edges = Mat()
-            try {
-                Imgproc.cvtColor(crop, gray, Imgproc.COLOR_BGR2GRAY)
-
-                // Black threshold
-                Imgproc.threshold(gray, blackMask, 79.0, 255.0, Imgproc.THRESH_BINARY_INV)
-                val blackRatio = Core.countNonZero(blackMask).toDouble() / gray.total()
-
-                // White threshold
-                Imgproc.threshold(gray, whiteMask, 220.0, 255.0, Imgproc.THRESH_BINARY)
-                val whiteRatio = Core.countNonZero(whiteMask).toDouble() / gray.total()
-
-                // Edge detection
-                Imgproc.Canny(gray, edges, 80.0, 160.0)
-                val edgeRatio = Core.countNonZero(edges).toDouble() / gray.total()
-
-                // Safe: mostly white = text bubble
-                if (whiteRatio >= whiteSafe) return@filter true
-
-                val isSfxOrImage = areaRatio > 0.018 && blackRatio > blackThr && edgeRatio > edgeThr
-                val isFlatSuspicious = ratio > 2.2 && w > imgWidth * 0.30 &&
-                    edgeRatio > maxOf(0.07, edgeThr - 0.03) && whiteRatio < whiteSafe
-                val isLargeSuspicious = areaRatio > 0.045 && whiteRatio < 0.55 && edgeRatio > 0.075
-
-                !(isSfxOrImage || isFlatSuspicious || isLargeSuspicious)
-            } finally {
-                edges.release()
-                whiteMask.release()
-                blackMask.release()
-                gray.release()
+            if (crop.empty()) {
+                crop.release()
+                return@filter false
             }
+
+            try {
+                val gray = Mat()
+                val blackMask = Mat()
+                val whiteMask = Mat()
+                val edges = Mat()
+                try {
+                    Imgproc.cvtColor(crop, gray, Imgproc.COLOR_BGR2GRAY)
+
+                    // Black threshold
+                    Imgproc.threshold(gray, blackMask, 79.0, 255.0, Imgproc.THRESH_BINARY_INV)
+                    val blackRatio = Core.countNonZero(blackMask).toDouble() / gray.total()
+
+                    // White threshold
+                    Imgproc.threshold(gray, whiteMask, 220.0, 255.0, Imgproc.THRESH_BINARY)
+                    val whiteRatio = Core.countNonZero(whiteMask).toDouble() / gray.total()
+
+                    // Edge detection
+                    Imgproc.Canny(gray, edges, 80.0, 160.0)
+                    val edgeRatio = Core.countNonZero(edges).toDouble() / gray.total()
+
+                    // Safe: mostly white = text bubble
+                    if (whiteRatio >= whiteSafe) return@filter true
+
+                    val isSfxOrImage = areaRatio > 0.018 && blackRatio > blackThr && edgeRatio > edgeThr
+                    val isFlatSuspicious = ratio > 2.2 && w > imgWidth * 0.30 &&
+                        edgeRatio > maxOf(0.07, edgeThr - 0.03) && whiteRatio < whiteSafe
+                    val isLargeSuspicious = areaRatio > 0.045 && whiteRatio < 0.55 && edgeRatio > 0.075
+
+                    !(isSfxOrImage || isFlatSuspicious || isLargeSuspicious)
+                } finally {
+                    edges.release()
+                    whiteMask.release()
+                    blackMask.release()
+                    gray.release()
+                }
+            } finally {
+                crop.release()
+            }
+        }
+    }
+
+    /**
+     * Detect bubble background color (light/white vs dark/black).
+     * Returns android.graphics.Color (Color.WHITE or Color.BLACK).
+     */
+    fun detectBubbleBackgroundColor(mat: Mat, box: IntArray): Int {
+        val (x1, y1, x2, y2) = box
+        val w = maxOf(1, x2 - x1)
+        val h = maxOf(1, y2 - y1)
+
+        val crop = mat.submat(Rect(x1, y1, w, h))
+        if (crop.empty()) {
+            crop.release()
+            return android.graphics.Color.WHITE
+        }
+
+        val gray = Mat()
+        try {
+            Imgproc.cvtColor(crop, gray, Imgproc.COLOR_BGR2GRAY)
+            val meanVal = Core.mean(gray).`val`[0]
+            return if (meanVal < 128.0) {
+                android.graphics.Color.BLACK
+            } else {
+                android.graphics.Color.WHITE
+            }
+        } catch (_: Exception) {
+            return android.graphics.Color.WHITE
+        } finally {
+            gray.release()
+            crop.release()
         }
     }
 
