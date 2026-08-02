@@ -26,6 +26,7 @@ class TranslationPipeline(
     private val params: TweakParams,
     private val rateLimiter: RateLimiter = RateLimiter((params.minRequestDelay * 1000).toLong()),
     private val targetLanguage: String = "Indonesian",
+    private val cacheRepo: com.kzkt.app.data.TranslationCacheRepository? = null,
     private val onProgress: (String) -> Unit = {},
     private val isCancelled: () -> Boolean = { false },
 ) {
@@ -162,10 +163,10 @@ class TranslationPipeline(
 
             if (params.pakaiPatchUntukBoxGepeng && suspiciousFlat) {
                 textRenderer.renderTextInBubble(canvas, coordinateMap[num]!!, text,
-                    backgroundPatch = true, targetLanguage = targetLanguage, bgColor = bgColor)
+                    backgroundPatch = true, targetLanguage = targetLanguage, bgColor = bgColor,
+                    customFontPath = params.customFontPath)
             } else {
                 // Background: blurred adaptive patch, drawn on a bubble-sized overlay
-                // (not a full-page bitmap — avoids allocating ~13 MB per bubble)
                 val marginX = (w * params.maskMarginRatio).toInt()
                 val marginY = (h * params.maskMarginRatio).toInt()
                 val cornerRadius = maxOf(6, minOf(w, h) / 3)
@@ -199,7 +200,8 @@ class TranslationPipeline(
                 canvas.drawBitmap(overlay, x1 - marginX - pad, y1 - marginY - pad, blurPaint)
 
                 textRenderer.renderTextInBubble(canvas, coordinateMap[num]!!, text,
-                    backgroundPatch = false, targetLanguage = targetLanguage, bgColor = bgColor)
+                    backgroundPatch = false, targetLanguage = targetLanguage, bgColor = bgColor,
+                    customFontPath = params.customFontPath)
             }
             count++
         }
@@ -298,44 +300,71 @@ class TranslationPipeline(
         }
 
         // ── Mosaic → LLM Translate ──
-        val maxPerBatch = params.maxBubblesPerRequest
-        val chunks = MosaicBuilder.chunkCrops(cropItems, maxPerBatch)
         val allTranslations = mutableMapOf<String, String>()
+        val cropsToTranslate = mutableListOf<MosaicBuilder.CropItem>()
 
-        for ((chunkIdx, chunk) in chunks.withIndex()) {
-            if (isCancelled()) return PipelineResult(null, failed = true)
-
-            if (chunks.size > 1) {
-                onProgress("  [Chunk ${chunkIdx + 1}/${chunks.size}] Processing bubbles ${chunk.first().id}..${chunk.last().id}")
-            }
-
-            val shrunk = MosaicBuilder.shrinkCropsIfTooTall(chunk, params.maxTinggiMosaik, params.jarakAntarPotongan)
-            val mosaic = MosaicBuilder.buildMosaic(shrunk, params)
-
-            onProgress("  Translating with ${provider.providerName}...")
-            val prompt = Constants.buildPrompt(targetLanguage)
-
-            try {
-                val result = rateLimiter.executeWithRetry(
-                    apiCall = { provider.translateImage(mosaic, prompt) },
-                    providerName = provider.providerName,
-                    isCancelled = isCancelled,
-                    onWait = { msg -> onProgress(msg) }
-                )
-
-                if (result != null) {
-                    val cleaned = JsonUtils.sanitizeJson(result)
-                    allTranslations.putAll(JsonUtils.parseTranslationMap(cleaned))
-                }
-            } catch (e: Exception) {
-                if (e is kotlinx.coroutines.CancellationException || isCancelled()) {
-                    throw e
-                }
-                val msg = e.message ?: "Unknown error"
-                if (msg == "API_KEY_ERROR") {
-                    onProgress("[!] API key for ${provider.providerName} is expired or invalid.")
+        if (cacheRepo != null) {
+            for (crop in cropItems) {
+                val cached = cacheRepo.getTranslation(crop.bitmap, targetLanguage)
+                if (cached != null) {
+                    allTranslations[crop.id] = cached
                 } else {
-                    onProgress("[!] ${provider.providerName} request failed: $msg")
+                    cropsToTranslate.add(crop)
+                }
+            }
+            if (allTranslations.isNotEmpty()) {
+                onProgress("  [Cache Hit] Found ${allTranslations.size}/${cropItems.size} cached translations locally.")
+            }
+        } else {
+            cropsToTranslate.addAll(cropItems)
+        }
+
+        if (cropsToTranslate.isNotEmpty()) {
+            val maxPerBatch = params.maxBubblesPerRequest
+            val chunks = MosaicBuilder.chunkCrops(cropsToTranslate, maxPerBatch)
+
+            for ((chunkIdx, chunk) in chunks.withIndex()) {
+                if (isCancelled()) return PipelineResult(null, failed = true)
+
+                if (chunks.size > 1) {
+                    onProgress("  [Chunk ${chunkIdx + 1}/${chunks.size}] Processing bubbles ${chunk.first().id}..${chunk.last().id}")
+                }
+
+                val shrunk = MosaicBuilder.shrinkCropsIfTooTall(chunk, params.maxTinggiMosaik, params.jarakAntarPotongan)
+                val mosaic = MosaicBuilder.buildMosaic(shrunk, params)
+
+                onProgress("  Translating with ${provider.providerName}...")
+                val prompt = Constants.buildPrompt(targetLanguage)
+
+                try {
+                    val result = rateLimiter.executeWithRetry(
+                        apiCall = { provider.translateImage(mosaic, prompt) },
+                        providerName = provider.providerName,
+                        isCancelled = isCancelled,
+                        onWait = { msg -> onProgress(msg) }
+                    )
+
+                    if (result != null) {
+                        val cleaned = JsonUtils.sanitizeJson(result)
+                        val parsed = JsonUtils.parseTranslationMap(cleaned)
+                        allTranslations.putAll(parsed)
+                        if (cacheRepo != null) {
+                            for ((id, text) in parsed) {
+                                val item = cropItems.find { it.id == id }
+                                if (item != null) cacheRepo.saveTranslation(item.bitmap, targetLanguage, text)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    if (e is kotlinx.coroutines.CancellationException || isCancelled()) {
+                        throw e
+                    }
+                    val msg = e.message ?: "Unknown error"
+                    if (msg == "API_KEY_ERROR") {
+                        onProgress("[!] API key for ${provider.providerName} is expired or invalid.")
+                    } else {
+                        onProgress("[!] ${provider.providerName} request failed: $msg")
+                    }
                 }
             }
         }

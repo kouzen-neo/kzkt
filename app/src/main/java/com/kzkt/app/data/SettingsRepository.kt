@@ -45,6 +45,8 @@ class SettingsRepository(private val context: Context) {
         private val KEY_PAD_Y = floatPreferencesKey("pad_y_ratio")
         private val KEY_MIN_PAD = intPreferencesKey("min_pad")
         private val KEY_LAST_DIR = stringPreferencesKey("last_opened_dir")
+        private val KEY_CUSTOM_FONT = stringPreferencesKey("custom_font_path")
+        private val KEY_USE_INPAINTING = booleanPreferencesKey("use_inpainting")
     }
 
     data class Settings(
@@ -70,6 +72,8 @@ class SettingsRepository(private val context: Context) {
         val padYRatio: Float = 0.25f,
         val minPad: Int = 35,
         val lastOpenedDir: String = "",
+        val customFontPath: String = "",
+        val useInpainting: Boolean = false,
     )
 
     private object Defaults {
@@ -100,6 +104,8 @@ class SettingsRepository(private val context: Context) {
             padYRatio = prefs[KEY_PAD_Y] ?: Defaults.settings.padYRatio,
             minPad = prefs[KEY_MIN_PAD] ?: Defaults.settings.minPad,
             lastOpenedDir = prefs[KEY_LAST_DIR] ?: Defaults.settings.lastOpenedDir,
+            customFontPath = prefs[KEY_CUSTOM_FONT] ?: Defaults.settings.customFontPath,
+            useInpainting = prefs[KEY_USE_INPAINTING] ?: Defaults.settings.useInpainting,
         )
     }
 
@@ -145,6 +151,14 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[KEY_CUSTOM_BASE_URL] = url }
     }
 
+    suspend fun saveCustomFontPath(path: String) {
+        context.dataStore.edit { it[KEY_CUSTOM_FONT] = path }
+    }
+
+    suspend fun saveUseInpainting(enabled: Boolean) {
+        context.dataStore.edit { it[KEY_USE_INPAINTING] = enabled }
+    }
+
     suspend fun saveTweakParam(keyField: String, value: Any) {
         context.dataStore.edit { prefs ->
             when (keyField) {
@@ -154,6 +168,7 @@ class SettingsRepository(private val context: Context) {
                 "pad_x" -> if (value is Float) prefs[KEY_PAD_X] = value
                 "pad_y" -> if (value is Float) prefs[KEY_PAD_Y] = value
                 "min_pad" -> if (value is Int) prefs[KEY_MIN_PAD] = value
+                "use_inpainting" -> if (value is Boolean) prefs[KEY_USE_INPAINTING] = value
             }
         }
     }

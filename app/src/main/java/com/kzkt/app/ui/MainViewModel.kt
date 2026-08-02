@@ -177,12 +177,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     minPad = settings.value.minPad,
                 )
 
+                val cacheRepo = com.kzkt.app.data.TranslationCacheRepository(getApplication())
+
                 val pipeline = TranslationPipeline(
                     yolo = yolo,
                     provider = provider,
                     textRenderer = textRenderer!!,
                     params = params,
                     targetLanguage = settings.value.targetLanguage,
+                    cacheRepo = cacheRepo,
                     onProgress = { msg ->
                         post {
                             translationLog.add(msg)

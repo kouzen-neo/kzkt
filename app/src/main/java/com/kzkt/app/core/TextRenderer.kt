@@ -28,10 +28,23 @@ class TextRenderer(private val context: Context) {
         return NON_LATIN_PATTERN.matcher(text).find()
     }
 
-    private fun getTypeface(text: String, size: Int, language: String? = null): Typeface {
+    private fun getTypeface(text: String, size: Int, language: String? = null, customFontPath: String = ""): Typeface {
         val isNonLatin = hasNonLatin(text)
-        val fontPath = if (isNonLatin) FONT_UNIVERSAL else FONT_MANGA
+        if (!isNonLatin && customFontPath.isNotBlank()) {
+            val file = java.io.File(customFontPath)
+            if (file.exists() && file.canRead()) {
+                return fontCache.getOrPut(customFontPath) {
+                    try {
+                        Typeface.createFromFile(file)
+                    } catch (e: Exception) {
+                        Log.w("KZKT", "Custom font load failed for $customFontPath: ${e.message}")
+                        Typeface.DEFAULT
+                    }
+                }
+            }
+        }
 
+        val fontPath = if (isNonLatin) FONT_UNIVERSAL else FONT_MANGA
         return fontCache.getOrPut(fontPath) {
             try {
                 Typeface.createFromAsset(context.assets, fontPath)
@@ -131,6 +144,7 @@ class TextRenderer(private val context: Context) {
         backgroundPatch: Boolean = false,
         targetLanguage: String? = null,
         bgColor: Int = Color.WHITE,
+        customFontPath: String = "",
     ) {
         val (x1, y1, x2, y2) = bubbleRect
         val boxWidth = maxOf(1, x2 - x1)
@@ -141,7 +155,7 @@ class TextRenderer(private val context: Context) {
         val isJapanese = langKey == "japanese" || langKey == "jepang"
 
         if (isJapanese) {
-            renderJapaneseVertical(canvas, text, x1, y1, x2, y2, settings, backgroundPatch, bgColor)
+            renderJapaneseVertical(canvas, text, x1, y1, x2, y2, settings, backgroundPatch, bgColor, customFontPath)
             return
         }
 
@@ -162,7 +176,7 @@ class TextRenderer(private val context: Context) {
         while (low <= high) {
             val fSize = (low + high) / 2
             val paint = Paint().apply {
-                typeface = getTypeface(displayText, fSize)
+                typeface = getTypeface(displayText, fSize, targetLanguage, customFontPath)
                 textSize = fSize.toFloat()
                 isAntiAlias = true
             }
@@ -191,7 +205,7 @@ class TextRenderer(private val context: Context) {
         // Final render calculation
         bestFontSize = maxOf(minFontSize, (bestFontSize * settings.fontScale).toInt())
         val finalPaint = Paint().apply {
-            typeface = getTypeface(displayText, bestFontSize)
+            typeface = getTypeface(displayText, bestFontSize, targetLanguage, customFontPath)
             textSize = bestFontSize.toFloat()
             isAntiAlias = true
             textAlign = Paint.Align.LEFT
@@ -271,6 +285,7 @@ class TextRenderer(private val context: Context) {
         settings: TextSettings,
         backgroundPatch: Boolean,
         bgColor: Int = Color.WHITE,
+        customFontPath: String = "",
     ) {
         val cleanText = text.replace(" ", "").replace("\n", "")
         val boxWidth = maxOf(1, x2 - x1)
@@ -311,7 +326,7 @@ class TextRenderer(private val context: Context) {
 
         bestFontSize = maxOf(minFontSize, (bestFontSize * settings.fontScale).toInt())
         val paint = Paint().apply {
-            typeface = getTypeface(cleanText, bestFontSize)
+            typeface = getTypeface(cleanText, bestFontSize, customFontPath = customFontPath)
             textSize = bestFontSize.toFloat()
             isAntiAlias = true
         }

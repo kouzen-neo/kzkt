@@ -380,6 +380,62 @@ object ImageProcessor {
         return result
     }
 
+    /**
+     * Inpaint original text inside a speech bubble using OpenCV Photo.inpaint.
+     * Erases dark text strokes seamlessly matching background screentone/texture.
+     */
+    fun inpaintBubbleText(mat: Mat, box: IntArray): Mat {
+        val (x1, y1, x2, y2) = box
+        val w = maxOf(1, x2 - x1)
+        val h = maxOf(1, y2 - y1)
+
+        val rect = Rect(x1, y1, w, h)
+        val crop = mat.submat(rect)
+        if (crop.empty()) {
+            crop.release()
+            return mat
+        }
+
+        val gray = Mat()
+        val textMask = Mat()
+        val inpainted = Mat()
+        try {
+            Imgproc.cvtColor(crop, gray, Imgproc.COLOR_BGR2GRAY)
+            // Mask dark text strokes
+            Imgproc.threshold(gray, textMask, 110.0, 255.0, Imgproc.THRESH_BINARY_INV)
+
+            val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(3.0, 3.0))
+            Imgproc.dilate(textMask, textMask, kernel)
+            kernel.release()
+
+            val bgrCrop = Mat()
+            Imgproc.cvtColor(crop, bgrCrop, Imgproc.COLOR_RGBA2BGR)
+            org.opencv.photo.Photo.inpaint(bgrCrop, textMask, inpainted, 3.0, org.opencv.photo.Photo.INPAINT_TELEA)
+            bgrCrop.release()
+
+            val rgbaResult = Mat()
+            Imgproc.cvtColor(inpainted, rgbaResult, Imgproc.COLOR_BGR2RGBA)
+            rgbaResult.copyTo(mat.submat(rect))
+            rgbaResult.release()
+        } catch (e: Exception) {
+            Log.w("KZKT", "Inpainting failed: ${e.message}")
+        } finally {
+            inpainted.release()
+            textMask.release()
+            gray.release()
+            crop.release()
+        }
+        return mat
+    }
+
+    /**
+     * Auto-detect if page/manga is Webtoon format (tall vertical aspect ratio > 2.2).
+     */
+    fun isWebtoonLayout(bitmap: Bitmap): Boolean {
+        val ratio = bitmap.height.toDouble() / maxOf(1, bitmap.width)
+        return ratio > 2.2
+    }
+
     // ── Landscape Auto-Split ───────────────────────────────────────
 
     data class SplitResult(val partPath: String, val resultPath: String?)

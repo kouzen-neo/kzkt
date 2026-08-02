@@ -42,7 +42,10 @@ import com.kzkt.app.ui.component.Material3SettingsItem
 import com.kzkt.app.ui.theme.DefaultThemeColor
 import kotlinx.coroutines.launch
 
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.outlined.TextFields
+import androidx.compose.material.icons.outlined.AutoFixHigh
 
 // Seed-color presets for the accent picker (Material You keeps the default crimson).
 private val ACCENT_PRESETS = listOf(
@@ -65,6 +68,25 @@ fun SettingsScreen(
     onThemeColorChange: (Color) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val customFontPath = viewModel.settings.value.customFontPath
+    val useInpainting = viewModel.settings.value.useInpainting
+
+    val fontPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val destFile = java.io.File(context.filesDir, "custom_font_${System.currentTimeMillis()}.ttf")
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    destFile.outputStream().use { output -> input.copyTo(output) }
+                }
+                scope.launch { viewModel.settingsRepo.saveCustomFontPath(destFile.absolutePath) }
+            } catch (e: Exception) {
+                android.util.Log.e("KZKT", "Font import error: ${e.message}")
+            }
+        }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -114,6 +136,14 @@ fun SettingsScreen(
                             Text(if (themeColor == DefaultThemeColor) "System / Material You (default)" else "Custom seed color")
                         },
                         trailingContent = { AccentColorRow(themeColor, onThemeColorChange) },
+                    ),
+                    Material3SettingsItem(
+                        leadingContent = { SettingsIcon(Icons.Outlined.TextFields) },
+                        title = { Text("Custom Font (.ttf / .otf)") },
+                        description = {
+                            Text(if (customFontPath.isNotBlank()) java.io.File(customFontPath).name else "Tap to import custom font file")
+                        },
+                        onClick = { fontPickerLauncher.launch("*/*") },
                     ),
                 ),
             )
@@ -466,6 +496,24 @@ private fun TweakParamsSection(viewModel: MainViewModel) {
             ),
         )
     }
+
+    val useInpainting = viewModel.settings.value.useInpainting
+    Material3SettingsGroup(
+        items = listOf(
+            Material3SettingsItem(
+                leadingContent = { SettingsIcon(Icons.Outlined.AutoFixHigh) },
+                title = { Text("OpenCV Text Inpainting") },
+                description = { Text("Seamlessly erase original text matching background textures") },
+                trailingContent = {
+                    Switch(
+                        checked = useInpainting,
+                        onCheckedChange = { scope.launch { viewModel.settingsRepo.saveUseInpainting(it) } }
+                    )
+                }
+            )
+        )
+    )
+    Spacer(Modifier.height(8.dp))
 
     slider("max_bubbles", "Bubbles per request", 5f..50f)
     slider("request_delay", "Min request delay (s)", 0.5f..10f)

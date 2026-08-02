@@ -11,9 +11,17 @@ object Constants {
         "indonesian" to Pair("Cepat bangun!", "Ibu... tunggu..."),
         "japanese" to Pair("早く起きて！", "お母さん…待って…"),
         "mandarin" to Pair("快点起床！", "妈妈……等等……"),
+        "chinese (simplified)" to Pair("快点起床！", "妈妈……等等……"),
         "spanish" to Pair("¡Despierta rápido!", "Madre... espera..."),
+        "french" to Pair("Réveille-toi vite !", "Mère... attends..."),
+        "german" to Pair("Wach schnell auf!", "Mutter... warte..."),
+        "vietnamese" to Pair("Dậy nhanh lên!", "Mẹ... chờ đã..."),
         "portuguese" to Pair("Acorde rápido!", "Mãe... espere..."),
         "javanese" to Pair("Ndang tangi!", "Ibu... enteni..."),
+        "korean" to Pair("어서 일어나라!", "엄마... 잠깐..."),
+        "russian" to Pair("Быстро просыпайся!", "Мама... подожди..."),
+        "arabic" to Pair("استيقظ بسرعة!", "أمي... انتظري..."),
+        "thai" to Pair("ตื่นเร็วเข้า!", "แม่... เดี๋ยวก่อน..."),
     )
 
     // ── Model decryption ───────────────────────────────────────────

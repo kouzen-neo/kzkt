@@ -76,8 +76,9 @@ object Config {
     )
 
     val LANGUAGE_CHOICES: List<String> = listOf(
-        "English", "Indonesian", "Japanese", "Mandarin",
-        "Spanish", "Portuguese", "Javanese", "Korean", "Russian", "Thai",
+        "English", "Indonesian", "Japanese", "Mandarin", "Spanish",
+        "French", "German", "Vietnamese", "Portuguese", "Javanese",
+        "Korean", "Russian", "Arabic", "Thai",
     )
 
     // ── Tweakable Parameters ───────────────────────────────────────
@@ -104,6 +105,8 @@ object Config {
         var rasioBoxGepeng: Double = 2.4,
         var lebarBoxGepengRatio: Double = 0.45,
         var tinggiBoxGepengRatio: Double = 0.22,
+        var useInpainting: Boolean = false,
+        var customFontPath: String = "",
     )
 
     fun getLangCode(targetLanguage: String): String {
