@@ -1,71 +1,62 @@
-# CyKt Kotlin Forked of Cypy
+# KZKT
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.0-purple.svg)](https://kotlinlang.org/)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4-purple.svg)](https://kotlinlang.org/)
 [![Android SDK](https://img.shields.io/badge/Android-SDK%2026%2B-green.svg)](https://developer.android.com)
 
-A high-performance, native Android application for automatic manga and comic translation.
-
-> **Fork & Porting Information:**
-> This project is a **Native Android Mobile Porting** of the original Python desktop application [indravoyager/cypy](https://github.com/indravoyager/cypy). It has been completely re-engineered from the ground up into a 100% Kotlin native mobile application optimized for Android smartphones and tablets.
+KZKT is a native Android application for automatic manga and comic translation. It detects speech bubbles on-page with on-device AI, sends the text to the vision LLM of your choice, and renders the translated text back into the page — all locally, with no root access required.
 
 ---
 
-## Key Features
+## Highlights
 
-- **Native Mobile Performance:** Fully built with **Jetpack Compose**, **Kotlin Coroutines**, and **OpenCV C++ Native JNI** for instant UI responsiveness, zero native memory leaks, and low memory overhead.
-- **YOLO Speech Bubble Detection:** On-device speech bubble detection using **Microsoft ONNX Runtime Android SDK** with 3-stage cascade prediction.
-- **PDF Input & Output Support:** Render PDF pages directly to images and compile translated pages back into PDF documents using built-in Android `PdfRenderer` & `PdfDocument` (0 extra dependencies).
-- **Multi-Provider Vision LLM Support:**
-  - **Google Gemini** (`gemini-3.1-flash-lite`, etc.)
-  - **OpenAI** (`gpt-5.4-mini`, etc.)
-  - **OpenRouter** (`qwen2.5-vl-72b-instruct`, etc.)
-  - **Zen / OpenCode Go**
-  - **Custom / Local AI:** Dynamic Base URL & Auto-Model Detection for **Ollama**, **LM Studio**, **LocalAI**, and **vLLM** (with/without API Key).
-- **Smart Mosaic Batching:** Automatically crops and packs speech bubbles into high-density mosaics with vertical RTL (Manga) reading order to cut API costs by up to 80%.
-- **Robust JSON Resiliency:** Dual-tier JSON parser with `JsonReader` fallback to tolerate duplicate keys from LLMs without failing translation batches.
-- **Dynamic Text Rendering & Masking:** Automatic bubble masking (rounded rectangle / oval) with adaptive font sizing and word-wrapping (`Canvas` & `StaticLayout`).
-- **Public Gallery Storage:** Automatically saves translated pages directly to `/Download/CYPY/` so they instantly appear in your **Android Gallery** and **Google Photos**.
-- **Scoped Storage & PhotoPicker Safe:** Fully compatible with Android 10 to Android 15+ (no root or dangerous permissions required).
+- **On-device bubble detection** — YOLO via Microsoft ONNX Runtime Android, with a 3-stage cascade for accurate detection of speech bubbles, SFX, and overlapping boxes.
+- **Multi-provider vision LLM** — Google Gemini, OpenAI, OpenRouter, Zen, OpenCode Go, plus any custom or local endpoint (Ollama, LM Studio, LocalAI, vLLM) with automatic model detection.
+- **Cost-efficient mosaic batching** — speech bubbles are cropped and packed into vertical RTL mosaics to cut API requests by up to 80%.
+- **PDF in, PDF out** — render PDF pages to images and reassemble translated pages back into PDF using only the built-in Android `PdfRenderer` and `PdfDocument`.
+- **Resilient JSON parsing** — tolerates duplicate keys and malformed LLM output so a single bad response never aborts a batch.
+- **Adaptive text rendering** — automatic bubble masking with rounded or oval shapes, font auto-scaling, and word wrapping via `Canvas` and `StaticLayout`.
+- **Gallery-ready output** — translated pages are saved to `/Download/KZKT/` and appear instantly in your gallery and Google Photos.
+- **Modern, safe storage** — built for Android 10 through Android 15+, scoped storage only; no dangerous permissions, no root.
 
 ---
 
 ## Technology Stack
 
-| Layer | Technologies & Libraries |
+| Layer | Technologies |
 | :--- | :--- |
-| **Language & Core** | Kotlin 1.9+, Java 17 |
-| **UI Framework** | Jetpack Compose, Material 3, Navigation Compose, Coil Image Loader |
-| **Concurrency & State** | Kotlin Coroutines, Flow, ViewModel, DataStore Preferences |
-| **Machine Learning** | Microsoft ONNX Runtime Android SDK (`com.microsoft.onnxruntime:onnxruntime-android:1.21.0`) |
-| **Computer Vision** | OpenCV 4.10.0 Android SDK (`libopencv_java4.so` C++ JNI) |
-| **Networking & JSON** | OkHttp 4.12.0, Gson (Lenient Parsing Mode) |
-| **Target Android API** | `minSdk = 26` (Android 8.0), `targetSdk = 36` (Android 15+) |
+| Language & Core | Kotlin, Java 17 |
+| UI | Jetpack Compose, Material 3, Navigation Compose, Coil |
+| Concurrency & State | Coroutines, Flow, ViewModel, DataStore Preferences |
+| Machine Learning | ONNX Runtime Android (`com.microsoft.onnxruntime:onnxruntime-android:1.21.0`) |
+| Computer Vision | OpenCV 4.10.0 Android SDK (`libopencv_java4.so` C++ JNI) |
+| Networking & JSON | OkHttp 4.12, Gson (lenient mode) |
+| Target API | `minSdk = 26` (Android 8.0), `targetSdk = 36` (Android 15+) |
 
 ---
 
-## Architecture & Pipeline Workflow
+## Pipeline
 
 ```text
-[ Input Image / Manga Page ]
+[ Input image / manga page ]
            |
            v
-[ 1. YOLO ONNX Bubble Detection ] --> Detect Bounding Boxes
+[ 1. YOLO ONNX bubble detection ] --> bounding boxes
            |
            v
-[ 2. OpenCV Filtering & Smart Crop ] --> Filter Giant Boxes, SFX, & Merge Overlaps
+[ 2. OpenCV filtering & smart crop ] --> remove SFX, merge overlaps
            |
            v
-[ 3. Mosaic Builder ] --> Pack Crops into Vertical RTL Mosaic + Red ID Labels
+[ 3. Mosaic builder ] --> pack crops into vertical RTL mosaic + red ID labels
            |
            v
-[ 4. Vision LLM Provider API ] --> Gemini / OpenAI / Custom Local LLM
+[ 4. Vision LLM provider ] --> Gemini / OpenAI / OpenRouter / custom local
            |
            v
-[ 5. Text Renderer & Masking ] --> Draw In-Bubble Mask + Auto-scaled Wrapped Text
+[ 5. Text renderer & masking ] --> in-bubble mask + auto-scaled wrapped text
            |
            v
-[ Output Image in /Download/CYPY/ ] --> Instant Access in Android Gallery
+[ Output in /Download/KZKT/ ] --> visible in gallery instantly
 ```
 
 ---
@@ -74,49 +65,51 @@ A high-performance, native Android application for automatic manga and comic tra
 
 ```text
 ├── app/
-│   ├── src/main/
-│   │   ├── java/com/cypy/app/
-│   │   │   ├── core/           # Translation Pipeline, YOLO ONNX Engine, OpenCV, TextRenderer
-│   │   │   ├── core/providers/ # Gemini, OpenAI, Custom LLM Provider Implementations
-│   │   │   ├── data/           # SettingsRepository (DataStore Persistence)
-│   │   │   ├── ui/             # Jetpack Compose Screens (MainScreen, SettingsScreen) & MainViewModel
-│   │   │   └── util/           # JsonUtils & Helper utilities
-│   │   ├── assets/             # Encrypted YOLO ONNX model (eyecypy.dat) & Custom Fonts
-│   │   └── AndroidManifest.xml
-│   └── build.gradle.kts
-├── opencv/                      # OpenCV 4.x Android SDK Module (Native JNI)
-├── build.gradle.kts             # Root Gradle build script
-├── settings.gradle.kts          # Root settings script
+│   └── src/main/
+│       ├── java/com/kzkt/app/
+│       │   ├── core/           # pipeline, YOLO ONNX engine, OpenCV, text renderer
+│       │   ├── core/providers/ # Gemini, OpenAI, OpenRouter, custom providers
+│       │   ├── data/           # settings & history (DataStore persistence)
+│       │   ├── ui/             # Compose screens (Translate, History, Settings)
+│       │   ├── ui/component/   # reusable Material 3 components
+│       │   └── util/           # helpers
+│       ├── assets/             # encrypted YOLO model (kzkt.dat) & fonts
+│       └── AndroidManifest.xml
+├── opencv/                     # OpenCV 4.x Android SDK module (native JNI)
+├── build.gradle.kts
+├── settings.gradle.kts
 └── README.md
 ```
 
 ---
 
-## How to Build the APK
+## Build the APK
 
-1. **Clone the Repository:**
+1. Clone the repository:
    ```bash
-   git clone https://github.com/kouzen-neo/cypy-mobile-native-kotlin.git
-   cd cypy-mobile-native-kotlin
+   git clone https://github.com/kouzen-neo/kzkt.git
+   cd kzkt
    ```
 
-2. **Open in Android Studio:**
-   - Open Android Studio (Ladybug, Jellyfish, or newer).
-   - Allow Gradle to sync dependencies.
-
-3. **Build Debug or Release APK:**
+2. Open in Android Studio, let Gradle sync, then build:
    ```bash
    ./gradlew assembleDebug
    ```
-   The output APK will be generated at `app/build/outputs/apk/debug/app-debug.apk`.
 
----
-
-## Credits & Acknowledgments
-- Original Python Application by [indravoyager/cypy](https://github.com/indravoyager/cypy).
-- Native Android Kotlin Porting by [kouzen-neo](https://github.com/kouzen-neo).
+3. Install the APK:
+   ```text
+   app/build/outputs/apk/debug/app-debug.apk
+   ```
 
 ---
 
 ## License
+
 This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## Credits
+
+- Original application: [indravoyager/cypy](https://github.com/indravoyager/cypy)
+- Native Android rewrite: [kouzen-neo](https://github.com/kouzen-neo)
