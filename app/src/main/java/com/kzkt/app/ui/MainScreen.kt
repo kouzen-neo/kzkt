@@ -479,6 +479,7 @@ private fun ResultPreview(
                 coordinateMap = lastResult.coordinateMap,
                 textRenderer = com.kzkt.app.core.TextRenderer(context),
                 targetLanguage = viewModel.settings.value.targetLanguage,
+                customFontPath = viewModel.settings.value.customFontPath,
                 onDismiss = { viewModel.showInteractiveEditor.value = false },
                 onSave = { updatedBitmap, _ ->
                     if (lastResult.outputPath != null) {

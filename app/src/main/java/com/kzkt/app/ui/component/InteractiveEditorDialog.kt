@@ -30,6 +30,7 @@ fun InteractiveEditorDialog(
     coordinateMap: Map<String, IntArray>,
     textRenderer: TextRenderer,
     targetLanguage: String,
+    customFontPath: String = "",
     onDismiss: () -> Unit,
     onSave: (Bitmap, Map<String, String>) -> Unit,
 ) {
@@ -51,7 +52,8 @@ fun InteractiveEditorDialog(
                     bubbleRect = box,
                     text = text,
                     backgroundPatch = true,
-                    targetLanguage = targetLanguage
+                    targetLanguage = targetLanguage,
+                    customFontPath = customFontPath,
                 )
             }
             resultBmp
