@@ -177,6 +177,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     padXRatio = settings.value.padXRatio.toDouble(),
                     padYRatio = settings.value.padYRatio.toDouble(),
                     minPad = settings.value.minPad,
+                    customFontPath = settings.value.customFontPath,
+                    useInpainting = settings.value.useInpainting,
                 )
 
                 val cacheRepo = com.kzkt.app.data.TranslationCacheRepository(getApplication())

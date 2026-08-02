@@ -29,8 +29,7 @@ class TextRenderer(private val context: Context) {
     }
 
     private fun getTypeface(text: String, size: Int, language: String? = null, customFontPath: String = ""): Typeface {
-        val isNonLatin = hasNonLatin(text)
-        if (!isNonLatin && customFontPath.isNotBlank()) {
+        if (customFontPath.isNotBlank()) {
             val file = java.io.File(customFontPath)
             if (file.exists() && file.canRead()) {
                 return fontCache.getOrPut(customFontPath) {
@@ -38,12 +37,15 @@ class TextRenderer(private val context: Context) {
                         Typeface.createFromFile(file)
                     } catch (e: Exception) {
                         Log.w("KZKT", "Custom font load failed for $customFontPath: ${e.message}")
-                        Typeface.DEFAULT
+                        val isNonLatin = hasNonLatin(text)
+                        val fontPath = if (isNonLatin) FONT_UNIVERSAL else FONT_MANGA
+                        Typeface.createFromAsset(context.assets, fontPath)
                     }
                 }
             }
         }
 
+        val isNonLatin = hasNonLatin(text)
         val fontPath = if (isNonLatin) FONT_UNIVERSAL else FONT_MANGA
         return fontCache.getOrPut(fontPath) {
             try {
