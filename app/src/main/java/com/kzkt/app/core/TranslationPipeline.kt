@@ -164,7 +164,12 @@ class TranslationPipeline(
                 w >= imgWidth * params.lebarBoxGepengRatio &&
                 h <= imgHeight * params.tinggiBoxGepengRatio
 
-            if (params.pakaiPatchUntukBoxGepeng && suspiciousFlat) {
+            if (params.useInpainting) {
+                // Background was inpainted seamlessly by OpenCV! Render text without solid patch
+                textRenderer.renderTextInBubble(canvas, coordinateMap[num]!!, text,
+                    backgroundPatch = false, targetLanguage = targetLanguage, bgColor = bgColor,
+                    customFontPath = params.customFontPath)
+            } else if (params.pakaiPatchUntukBoxGepeng && suspiciousFlat) {
                 textRenderer.renderTextInBubble(canvas, coordinateMap[num]!!, text,
                     backgroundPatch = true, targetLanguage = targetLanguage, bgColor = bgColor,
                     customFontPath = params.customFontPath)
@@ -378,17 +383,30 @@ class TranslationPipeline(
         }
 
         // ── Render translations ──
-        val resultBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        val canvas = Canvas(resultBitmap)
-
-        var translatedCount = 0
         val normalizedTranslations = mutableMapOf<String, String>()
         for ((key, text) in allTranslations) {
             val id = normalizeIdKey(key)
             if (id != null) normalizedTranslations[id] = text
         }
 
-        translatedCount = renderTranslations(
+        val workingMat = ImageProcessor.bitmapToMat(bitmap)
+        val resultBitmap = try {
+            if (params.useInpainting) {
+                onProgress("  [OpenCV Inpainting] Erasing original text strokes...")
+                for ((id, text) in normalizedTranslations) {
+                    if (text.uppercase() == "SKIP" || text.isBlank()) continue
+                    val box = coordinateMap[id] ?: continue
+                    ImageProcessor.inpaintBubbleText(workingMat, box)
+                }
+            }
+            ImageProcessor.matToBitmap(workingMat)
+        } finally {
+            workingMat.release()
+        }
+
+        val canvas = Canvas(resultBitmap)
+
+        val translatedCount = renderTranslations(
             canvas = canvas,
             translations = normalizedTranslations,
             coordinateMap = coordinateMap,

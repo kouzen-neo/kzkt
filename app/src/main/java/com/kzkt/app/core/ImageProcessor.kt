@@ -406,8 +406,14 @@ object ImageProcessor {
         val inpainted = Mat()
         try {
             Imgproc.cvtColor(crop, gray, Imgproc.COLOR_BGR2GRAY)
-            // Mask dark text strokes
-            Imgproc.threshold(gray, textMask, 110.0, 255.0, Imgproc.THRESH_BINARY_INV)
+            val meanBrightness = Core.mean(gray).`val`[0]
+            if (meanBrightness > 128) {
+                // White background: threshold dark text strokes
+                Imgproc.threshold(gray, textMask, 150.0, 255.0, Imgproc.THRESH_BINARY_INV)
+            } else {
+                // Dark background: threshold light text strokes
+                Imgproc.threshold(gray, textMask, 110.0, 255.0, Imgproc.THRESH_BINARY)
+            }
 
             val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(3.0, 3.0))
             Imgproc.dilate(textMask, textMask, kernel)
@@ -420,7 +426,9 @@ object ImageProcessor {
 
             val rgbaResult = Mat()
             Imgproc.cvtColor(inpainted, rgbaResult, Imgproc.COLOR_BGR2RGBA)
-            rgbaResult.copyTo(mat.submat(rect))
+            val targetSubmat = mat.submat(rect)
+            rgbaResult.copyTo(targetSubmat)
+            targetSubmat.release()
             rgbaResult.release()
         } catch (e: Exception) {
             Log.w("KZKT", "Inpainting failed: ${e.message}")
