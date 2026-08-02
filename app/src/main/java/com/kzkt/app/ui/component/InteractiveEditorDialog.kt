@@ -92,21 +92,46 @@ fun InteractiveEditorDialog(
                         .weight(1f)
                         .fillMaxWidth()
                         .onGloballyPositioned { containerSize = it.size }
-                        .pointerInput(containerSize, coordinateMap) {
+                        .pointerInput(containerSize, coordinateMap, originalBitmap) {
                             detectTapGestures { offset ->
-                                if (containerSize.width == 0 || containerSize.height == 0) return@detectTapGestures
-                                val scaleX = originalBitmap.width.toFloat() / containerSize.width
-                                val scaleY = originalBitmap.height.toFloat() / containerSize.height
-                                val imgX = (offset.x * scaleX).toInt()
-                                val imgY = (offset.y * scaleY).toInt()
+                                if (containerSize.width <= 0 || containerSize.height <= 0) return@detectTapGestures
+                                val imgW = originalBitmap.width.toFloat()
+                                val imgH = originalBitmap.height.toFloat()
+                                val imgAspect = imgW / imgH
+                                val containerAspect = containerSize.width.toFloat() / containerSize.height
 
-                                // Find tapped bubble
-                                for ((id, box) in coordinateMap) {
-                                    val (x1, y1, x2, y2) = box
-                                    if (imgX in x1..x2 && imgY in y1..y2) {
-                                        selectedBubbleId = id
-                                        editingText = currentTranslations[id] ?: ""
-                                        break
+                                val displayW: Float
+                                val displayH: Float
+                                val padX: Float
+                                val padY: Float
+
+                                if (containerAspect > imgAspect) {
+                                    displayH = containerSize.height.toFloat()
+                                    displayW = displayH * imgAspect
+                                    padX = (containerSize.width - displayW) / 2f
+                                    padY = 0f
+                                } else {
+                                    displayW = containerSize.width.toFloat()
+                                    displayH = displayW / imgAspect
+                                    padX = 0f
+                                    padY = (containerSize.height - displayH) / 2f
+                                }
+
+                                val relX = offset.x - padX
+                                val relY = offset.y - padY
+
+                                if (relX in 0f..displayW && relY in 0f..displayH) {
+                                    val imgX = ((relX / displayW) * imgW).toInt()
+                                    val imgY = ((relY / displayH) * imgH).toInt()
+
+                                    // Find tapped bubble
+                                    for ((id, box) in coordinateMap) {
+                                        val (x1, y1, x2, y2) = box
+                                        if (imgX in x1..x2 && imgY in y1..y2) {
+                                            selectedBubbleId = id
+                                            editingText = currentTranslations[id] ?: ""
+                                            break
+                                        }
                                     }
                                 }
                             }

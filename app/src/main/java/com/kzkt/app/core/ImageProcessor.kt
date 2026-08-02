@@ -385,9 +385,14 @@ object ImageProcessor {
      * Erases dark text strokes seamlessly matching background screentone/texture.
      */
     fun inpaintBubbleText(mat: Mat, box: IntArray): Mat {
-        val (x1, y1, x2, y2) = box
-        val w = maxOf(1, x2 - x1)
-        val h = maxOf(1, y2 - y1)
+        if (mat.empty() || box.size < 4) return mat
+        val cols = mat.cols()
+        val rows = mat.rows()
+
+        val x1 = box[0].coerceIn(0, maxOf(0, cols - 1))
+        val y1 = box[1].coerceIn(0, maxOf(0, rows - 1))
+        val w = (box[2] - x1).coerceIn(1, maxOf(1, cols - x1))
+        val h = (box[3] - y1).coerceIn(1, maxOf(1, rows - y1))
 
         val rect = Rect(x1, y1, w, h)
         val crop = mat.submat(rect)

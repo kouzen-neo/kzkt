@@ -51,6 +51,7 @@ class TranslationCacheRepository(private val context: Context) {
     }
 
     fun computeHash(bitmap: Bitmap): String {
+        if (bitmap.isRecycled) return ""
         return try {
             val stream = ByteArrayOutputStream()
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
