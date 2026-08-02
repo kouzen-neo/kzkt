@@ -8,15 +8,15 @@
         android:maxSdkVersion="29" />
 
     <application
-        android:name=".CypyApplication"
+        android:name=".KzktApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="CYPY"
+        android:label="@string/app_name"
         android:usesCleartextTraffic="true"
         android:extractNativeLibs="true"
         android:supportsRtl="false"
-        android:theme="@style/Theme.CYPY">
+        android:theme="@style/Theme.KZKT">
 
         <provider
 

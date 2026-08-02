@@ -14,6 +14,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "cypy"
+rootProject.name = "kzkt"
 include(":app")
 include(":opencv")

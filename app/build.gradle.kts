@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.cypy.app"
+    namespace = "com.kzkt.app"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.cypy.app"
+        applicationId = "com.kzkt.app"
         minSdk = 26
         targetSdk = 36
         versionCode = 1250113
