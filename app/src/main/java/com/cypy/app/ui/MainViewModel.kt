@@ -14,6 +14,8 @@ import com.cypy.app.core.TextRenderer
 import com.cypy.app.core.TranslationPipeline
 import com.cypy.app.core.YoloOnnx
 import com.cypy.app.core.providers.*
+import com.cypy.app.data.HistoryEntry
+import com.cypy.app.data.HistoryRepository
 import com.cypy.app.data.SettingsRepository
 import com.cypy.app.util.PdfExporter
 import com.cypy.app.util.PdfImporter
@@ -31,8 +33,9 @@ import java.util.concurrent.TimeUnit
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val settingsRepo = SettingsRepository(application)
+    val historyRepo = HistoryRepository(application)
 
-    // Observable state
+    // Observable state — all writes happen on the Main thread (see [post]).
     val settings = mutableStateOf(SettingsRepository.Settings())
 
     // File processing
@@ -63,6 +66,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private var pipelineLaunched = false
 
+    /**
+     * Compose snapshot state is not thread-safe: it must only be written on the
+     * Main thread. [post] marshals every state write from a background thread
+     * onto the Main dispatcher (this was a source of UI jank — F1).
+     */
+    private fun post(block: () -> Unit) {
+        viewModelScope.launch(Dispatchers.Main.immediate) { block() }
+    }
+
     init {
         // Load settings
         viewModelScope.launch {
@@ -79,12 +91,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             yolo = YoloOnnx(context)
             val ok = yolo!!.initialize()
-            if (ok) {
-                yoloReady.value = true
-                translationLog.add("YOLO model loaded successfully")
-            } else {
-                yoloError.value = "Failed to load YOLO model"
-                translationLog.add("[!] Failed to load YOLO model")
+            post {
+                if (ok) {
+                    yoloReady.value = true
+                    translationLog.add("YOLO model loaded successfully")
+                } else {
+                    yoloError.value = "Failed to load YOLO model"
+                    translationLog.add("[!] Failed to load YOLO model")
+                }
             }
             textRenderer = TextRenderer(context)
         }
@@ -152,7 +166,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val outputDir = cypyFolder.absolutePath
 
         translationJob?.cancel()
-        translationJob = viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
+        translationJob = viewModelScope.launch(Dispatchers.Default) {
             try {
                 val params = Config.TweakParams(
                     maxBubblesPerRequest = settings.value.maxBubblesPerRequest,
@@ -170,10 +184,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     params = params,
                     targetLanguage = settings.value.targetLanguage,
                     onProgress = { msg ->
-                        translationLog.add(msg)
-                        if (msg.contains("Done!")) {
-                            translationDone.value = translationDone.value + 1
-                            translationProgress.value = translationDone.value.toFloat() / translationTotal.value
+                        post {
+                            translationLog.add(msg)
+                            if (msg.contains("Done!")) {
+                                translationDone.value = translationDone.value + 1
+                                translationProgress.value = translationDone.value.toFloat() / translationTotal.value
+                            }
                         }
                     },
                     isCancelled = { _cancelled }
@@ -189,62 +205,75 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 for ((idx, path) in filesToProcess.withIndex()) {
                     if (_cancelled) {
-                        translationLog.add("[Cancelled] Translation stopped by user.")
+                        post { translationLog.add("[Cancelled] Translation stopped by user.") }
                         break
                     }
 
                     if (path.endsWith(".pdf", ignoreCase = true)) {
                         // ── PDF: extract pages → batch translate → reassemble ──
-                        translationLog.add("[${idx + 1}/${filesToProcess.size}] Opening PDF ${File(path).name}...")
+                        val fileName = File(path).name
+                        post { translationLog.add("[${idx + 1}/${filesToProcess.size}] Opening PDF $fileName...") }
                         val pdfFile = File(path)
                         val pages = PdfImporter.extractPdfToImages(pdfFile, tempDir)
                         if (pages.isEmpty()) {
-                            translationLog.add("[!] Could not read PDF: ${File(path).name}")
-                            translationDone.value = ++completed
-                            translationProgress.value = completed.toFloat() / totalSteps
+                            post {
+                                translationLog.add("[!] Could not read PDF: $fileName")
+                                translationDone.value = ++completed
+                                translationProgress.value = completed.toFloat() / totalSteps
+                            }
                             continue
                         }
-                        translationLog.add("  Extracted ${pages.size} pages from PDF.")
+                        post { translationLog.add("  Extracted ${pages.size} pages from PDF.") }
 
                         val results = pipeline.processImageBatch(pages, outputDir)
                         val translated = results.mapNotNull { it.outputPath }
-                        translationLog.add("  Translated ${translated.size}/${pages.size} pages.")
+                        post { translationLog.add("  Translated ${translated.size}/${pages.size} pages.") }
 
                         val outputPdf = File(cypyFolder, "${pdfFile.nameWithoutExtension}.pdf")
                         PdfExporter.createPdfFromImages(translated, outputPdf)
                         if (outputPdf.exists()) {
-                            translationLog.add("  PDF saved: ${outputPdf.absolutePath}")
-                            resultPaths.add(outputPdf.absolutePath)
-                            currentPreviewPath.value = outputPdf.absolutePath
+                            post {
+                                translationLog.add("  PDF saved: ${outputPdf.absolutePath}")
+                                resultPaths.add(outputPdf.absolutePath)
+                                currentPreviewPath.value = outputPdf.absolutePath
+                            }
+                            recordHistory(fileName, outputPdf.absolutePath, pages.size)
                         } else {
-                            translationLog.add("[!] Failed to assemble PDF.")
+                            post { translationLog.add("[!] Failed to assemble PDF.") }
                         }
 
                         // Cleanup temporary page images
                         pages.forEach { File(it).delete() }
-                        translationDone.value = ++completed
-                        translationProgress.value = completed.toFloat() / totalSteps
+                        post {
+                            translationDone.value = ++completed
+                            translationProgress.value = completed.toFloat() / totalSteps
+                        }
                     } else {
                         // ── Single image ──
-                        translationLog.add("[${idx + 1}/${filesToProcess.size}] Processing ${File(path).name}...")
+                        val fileName = File(path).name
+                        post { translationLog.add("[${idx + 1}/${filesToProcess.size}] Processing $fileName...") }
                         val result = pipeline.processSingleImage(path, outputDir)
                         if (result.outputPath != null) {
-                            resultPaths.add(result.outputPath)
-                            currentPreviewPath.value = result.outputPath
+                            post {
+                                resultPaths.add(result.outputPath)
+                                currentPreviewPath.value = result.outputPath
+                            }
+                            recordHistory(fileName, result.outputPath, 1)
                         }
-                        translationDone.value = ++completed
-                        translationProgress.value = completed.toFloat() / totalSteps
+                        post {
+                            translationDone.value = ++completed
+                            translationProgress.value = completed.toFloat() / totalSteps
+                        }
                     }
                 }
 
-
                 if (!_cancelled) {
-                    translationLog.add("Translation complete.")
+                    post { translationLog.add("Translation complete.") }
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
-                translationLog.add("[Cancelled] Translation stopped by user.")
+                post { translationLog.add("[Cancelled] Translation stopped by user.") }
             } finally {
-                translationActive.value = false
+                post { translationActive.value = false }
             }
         }
     }
@@ -266,6 +295,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun addLog(msg: String) {
         translationLog.add(msg)
+    }
+
+    /** Remove one entry from the Riwayat tab. */
+    fun deleteHistoryEntry(timestamp: Long) {
+        viewModelScope.launch(Dispatchers.IO) { historyRepo.delete(timestamp) }
+    }
+
+    /** Persist one finished file (image or assembled PDF) into the Riwayat tab. */
+    private fun recordHistory(fileName: String, outputPath: String, pageCount: Int) {
+        val s = settings.value
+        val entry = HistoryEntry(
+            timestamp = System.currentTimeMillis(),
+            fileName = fileName,
+            outputPath = outputPath,
+            pageCount = pageCount,
+            provider = s.llmProvider,
+            targetLanguage = s.targetLanguage,
+        )
+        viewModelScope.launch(Dispatchers.IO) { historyRepo.record(entry) }
     }
 
     override fun onCleared() {
@@ -317,7 +365,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
 
-                launch(Dispatchers.Main) {
+                post {
                     if (models.isNotEmpty()) {
                         customModels.addAll(models.sorted())
                         translationLog.add("Found ${models.size} models from custom provider")
@@ -327,7 +375,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     customModelsLoading.value = false
                 }
             } catch (e: Exception) {
-                launch(Dispatchers.Main) {
+                post {
                     translationLog.add("[!] Failed to fetch models: ${e.message}")
                     customModelsLoading.value = false
                 }

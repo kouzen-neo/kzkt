@@ -1,12 +1,11 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
     namespace = "com.cypy.app"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.cypy.app"
@@ -39,12 +38,16 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+
+    // AGP 9.0 built-in Kotlin
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     sourceSets {
@@ -68,14 +71,18 @@ android {
 }
 
 dependencies {
-    // Compose BOM
-    val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
+    // Compose BOM (androidx) — material3 overridden to the same 1.5.0-alpha25 Metrolist uses
+    val composeBom = platform("androidx.compose:compose-bom:2026.01.01")
     implementation(composeBom)
-    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material3:material3:1.5.0-alpha25")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material:material-icons-extended")
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // Theme: MaterialKolor (seed-color dynamic theming, same as Metrolist)
+    implementation("com.materialkolor:material-kolor:5.0.0")
+    implementation("androidx.palette:palette-ktx:1.0.0")
 
     // Activity + Navigation
     implementation("androidx.activity:activity-compose:1.9.3")
