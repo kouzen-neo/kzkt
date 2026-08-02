@@ -163,5 +163,42 @@ object FileUtils {
             android.util.Log.w("KZKT", "Failed to copy to MediaStore: ${e.message}")
         }
     }
+
+    /**
+     * Save bitmap directly to public MediaStore Download/KZKT directory.
+     */
+    fun saveBitmapToMediaStore(context: Context, bitmap: android.graphics.Bitmap, fileName: String, subDirName: String = "KZKT"): Uri? {
+        return try {
+            val isPdf = fileName.endsWith(".pdf", ignoreCase = true)
+            val relPath = if (subDirName.isNotBlank() && subDirName != "KZKT") {
+                "${android.os.Environment.DIRECTORY_DOWNLOADS}/KZKT/$subDirName"
+            } else {
+                "${android.os.Environment.DIRECTORY_DOWNLOADS}/KZKT"
+            }
+
+            val values = android.content.ContentValues().apply {
+                put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(android.provider.MediaStore.MediaColumns.MIME_TYPE, if (isPdf) "application/pdf" else "image/png")
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, relPath)
+                }
+            }
+
+            val targetUri = if (isPdf || android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
+                android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI
+            } else {
+                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            }
+
+            val uri = context.contentResolver.insert(targetUri, values) ?: return null
+            context.contentResolver.openOutputStream(uri)?.use { out ->
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+            }
+            uri
+        } catch (e: Exception) {
+            android.util.Log.w("KZKT", "Failed to save bitmap to MediaStore: ${e.message}")
+            null
+        }
+    }
 }
 

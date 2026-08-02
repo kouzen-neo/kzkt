@@ -1,11 +1,14 @@
 package com.kzkt.app.core
 
+import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
+import android.os.Environment
 import android.util.Log
 import com.kzkt.app.core.Config.TweakParams
 import com.kzkt.app.core.providers.LlmProvider
+import com.kzkt.app.ui.FileUtils
 import com.kzkt.app.util.JsonUtils
 import org.opencv.android.Utils
 import org.opencv.core.Core
@@ -27,6 +30,7 @@ class TranslationPipeline(
     private val rateLimiter: RateLimiter = RateLimiter((params.minRequestDelay * 1000).toLong()),
     private val targetLanguage: String = "Indonesian",
     private val cacheRepo: com.kzkt.app.data.TranslationCacheRepository? = null,
+    private val context: Context? = null,
     private val onProgress: (String) -> Unit = {},
     private val isCancelled: () -> Boolean = { false },
 ) {
@@ -634,8 +638,23 @@ class TranslationPipeline(
     private fun saveBitmap(bitmap: Bitmap, path: String) {
         val file = File(path)
         file.parentFile?.mkdirs()
-        FileOutputStream(file).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        try {
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+        } catch (e: Exception) {
+            val ctx = context
+            if (ctx != null) {
+                val subDir = file.parentFile?.name ?: "KZKT"
+                val uri = FileUtils.saveBitmapToMediaStore(ctx, bitmap, file.name, subDir)
+                if (uri == null) {
+                    val fallbackFile = File(ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "KZKT/${file.name}")
+                    fallbackFile.parentFile?.mkdirs()
+                    FileOutputStream(fallbackFile).use { out ->
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                    }
+                }
+            }
         }
     }
 }

@@ -163,9 +163,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         translationDone.value = 0
 
         val filesToProcess = selectedFiles.toList()
-        val baseDir = getApplication<Application>().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-            ?: getApplication<Application>().filesDir
-        val outputFolder = File(baseDir, "KZKT")
+        val downloadFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val outputFolder = File(downloadFolder, "KZKT")
         outputFolder.mkdirs()
         val outputDir = outputFolder.absolutePath
 
@@ -192,6 +191,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     params = params,
                     targetLanguage = settings.value.targetLanguage,
                     cacheRepo = cacheRepo,
+                    context = getApplication(),
                     onProgress = { msg ->
                         post {
                             translationLog.add(msg)
