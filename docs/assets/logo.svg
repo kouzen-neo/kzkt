@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="512" height="512">
+  <rect width="108" height="108" rx="24" fill="#17171F"/>
+  <!-- Large K (left) -->
+  <path d="M33,32 L33,76" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+  <path d="M33,52 L49,34" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+  <path d="M33,52 L49,74" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+  <!-- Small z (top right) -->
+  <path d="M58,32 L77,32 L58,48 L77,48" stroke="#FFFFFF" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+  <!-- Small t (bottom right) -->
+  <path d="M60,58 L77,58" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+  <path d="M68,52 L68,76" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+</svg>
