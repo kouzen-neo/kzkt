@@ -6,6 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [v1.39.0] - 2026-09-07
+
+### Added
+
+- **History Batch Folder Renaming**:
+  - Added folder renaming support for multi-page translation batches in the History menu, accessible from both the folder card overflow menu (3 dots) and the batch drill-down header.
+  - Renaming synchronizes the on-disk directory (`FileUtils.renameBatchFolderOnDisk`), updates MediaStore indexes, updates touch-up metadata, and atomically persists custom folder names in `HistoryRepository`.
+  - Added Material 3 `HistoryRenameFolderDialog` with real-time illegal character validation, constant layout stability, and IME Done keyboard action.
+- **Manga Genre Style Presets & Custom Prompting**:
+  - Added genre-specific translation directives (`Standard`, `Comedy`, `Psychological`, `Drama`, `Action`) tailored to capture distinct dialogue tones across single-page and batch pipelines.
+  - Added custom prompt instructions support allowing users to inject bespoke rules, honorific rules, or tone guidelines directly into provider prompts.
+  - Added dedicated `CustomPromptSheet` bottom sheet with interactive genre cards, prompt preview dialog, and persistence via DataStore.
+  - Added quick `Style: <Genre>` toggle chip on the main translation screen for rapid switching.
+- **In-Memory ONNX Model Loading**:
+  - Migrated ONNX runtime session initialization to in-memory byte buffer loading, preventing unencrypted model weights from lingering on disk cache.
+  - Added automatic cleanup of legacy cached model files (`kzkt.onnx` / `kzkt_*.onnx`) on app startup.
+- **Full-Screen Touch-up Editor Overhaul**:
+  - Replaced floating canvas toolbar with a unified edge-to-edge top bar (`EditorToolbar`) hosting page utilities (`Close`, `Undo`, `Redo`, `Original Peek`, `Raw OCR Toggle`, `Batch Edit`).
+  - Redesigned bubble edit controls into a docked, low-profile bottom bar (`EditorBubbleControls`) maximizing canvas visible height from ~340dp to ~615dp.
+  - Integrated pan/drag toggle into a floating zoom controls HUD with mutually exclusive navigation and drawing modes.
+- **Bubble Text Color & Contrast Customization**:
+  - Added text color dropdown selector to the bubble editor with support for custom hex colors stored in `BubbleMeta.textColor`.
+  - Added automatic background color luminance detection (`ImageRegion.detectBubbleBackgroundColor`) to preserve text contrast when adjusting font scale on dark/colored speech bubbles.
+
+### Changed
+
+- **Latin Script Vertical Box Rendering**: restricted vertical text drawing exclusively to non-Latin scripts (Japanese/CJK), ensuring Latin translations in tall vertical bubbles render horizontally with multi-line wrapping rather than single-character vertical stacking.
+- **Editor Bottom Bar Ergonomics**: adopted compact icon buttons with responsive label hiding to eliminate awkward text wrapping on smaller smartphone screens.
+
+### Fixed
+
+- **Adjacent / Double Speech Bubble Merging**: calibrated `BoxGeometry.shouldMerge` IoU threshold to `>= 0.50` (or `>= 0.85` small-box coverage) to prevent distinct adjacent or double speech bubbles from prematurely merging into a single bounding box and skipping dialogue.
+- **OCR Missed Bubble Vision Fallback**: added automatic fallback to multimodal Vision in `SinglePageTranslator` and `BatchPageTranslator` for speech bubbles where local OCR detected no text, or where LLM translation returned `SKIP` or empty, preventing dropped Japanese/English dialogue.
+- **Inpainting Border Leak Prevention**: removed aggressive `interiorDilate` operation in `ImageInpainting` that breached thin speech bubble contours into manga artwork, enhanced outer edge art detection, and protected outer panel borders with inset masking on fallback paths.
+- **History Rename Keyboard & Layout Jitter**: stabilized Compose `keyboardOptions` with a constant `ImeAction.Done` action and fixed 1-line supporting text height in `HistoryRenameFolderDialog`, eliminating soft keyboard flickering/restarts (`InputMethodManager.restartInput`) and layout shifts while typing.
+
 ## [v1.38.1] - 2026-09-04
 
 ### Fixed
