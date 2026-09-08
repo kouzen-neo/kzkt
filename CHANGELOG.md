@@ -19,9 +19,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Added custom prompt instructions support allowing users to inject bespoke rules, honorific rules, or tone guidelines directly into provider prompts.
   - Added dedicated `CustomPromptSheet` bottom sheet with interactive genre cards, prompt preview dialog, and persistence via DataStore.
   - Added quick `Style: <Genre>` toggle chip on the main translation screen for rapid switching.
-- **In-Memory ONNX Model Loading**:
-  - Migrated ONNX runtime session initialization to in-memory byte buffer loading, preventing unencrypted model weights from lingering on disk cache.
-  - Added automatic cleanup of legacy cached model files (`kzkt.onnx` / `kzkt_*.onnx`) on app startup.
 - **Full-Screen Touch-up Editor Overhaul**:
   - Replaced floating canvas toolbar with a unified edge-to-edge top bar (`EditorToolbar`) hosting page utilities (`Close`, `Undo`, `Redo`, `Original Peek`, `Raw OCR Toggle`, `Batch Edit`).
   - Redesigned bubble edit controls into a docked, low-profile bottom bar (`EditorBubbleControls`) maximizing canvas visible height from ~340dp to ~615dp.
@@ -37,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- **YOLO Model Decryption & Initialization**: restored correct XOR decryption key and resilient stream-decrypted disk caching for YOLO ONNX runtime session initialization.
 - **Adjacent / Double Speech Bubble Merging**: calibrated `BoxGeometry.shouldMerge` IoU threshold to `>= 0.50` (or `>= 0.85` small-box coverage) to prevent distinct adjacent or double speech bubbles from prematurely merging into a single bounding box and skipping dialogue.
 - **OCR Missed Bubble Vision Fallback**: added automatic fallback to multimodal Vision in `SinglePageTranslator` and `BatchPageTranslator` for speech bubbles where local OCR detected no text, or where LLM translation returned `SKIP` or empty, preventing dropped Japanese/English dialogue.
 - **Inpainting Border Leak Prevention**: removed aggressive `interiorDilate` operation in `ImageInpainting` that breached thin speech bubble contours into manga artwork, enhanced outer edge art detection, and protected outer panel borders with inset masking on fallback paths.
