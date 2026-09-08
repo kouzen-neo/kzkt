@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [v1.39.1] - 2026-09-08
+
+### Added
+
+- **Classic v1.38.1 Prompt Switch**:
+  - Added dedicated toggle in `CustomPromptSheet` and `QuickConfigRow` allowing users to switch between the clean, battle-tested Classic v1.38.1 prompt and custom genre directives.
+  - Classic mode is enabled by default to ensure natural, consistent manga dialogue flow without unwanted genre alterations.
+  - Added quick "Bersihkan Cache" button in `CustomPromptSheet` for instant translation memory reset.
+
+### Fixed
+
+- **Translation Memory Prompt-Aware Caching (Prompt Stagnation)**:
+  - Integrated prompt configuration hash (`promptSignature`) into `TranslationCacheRepository` keys (`${hash}_${lang}_${provider}_${model}_${sig}`).
+  - Resolves issue where modified prompt directives or genre switches returned stale cached translations from previous runs without invoking the LLM.
+- **Contextual Meaning Disambiguation**:
+  - Added explicit disambiguation rule in `Constants.buildPrompt` and `buildOcrPrompt` directing LLMs to infer context-dependent polysemous terms correctly (e.g. "full" / "いっぱい" / "満員" in cafes, shops, or queues translates to "penuh" / "ramai", not "kenyang").
+
 ## [v1.39.0] - 2026-09-07
 
 ### Added
