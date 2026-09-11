@@ -6,6 +6,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [v2.0.0] - 2026-09-12
+
+### Added
+
+- **KZKT Pro Offline Licensing System**:
+  - RSA-2048 cryptographic offline digital license verification via `LicenseManager`.
+  - Device-bound license keys (`KZKT-XXXX-XXXX`) protecting Pro features permanently without requiring network access.
+  - License management dialog (`LicenseDialog`) in Settings with one-tap copy of Device ID and direct Facebook DM integration (@yannkiniku) to order lifetime Pro keys.
+  - Free Tier limits: Maximum 8 pages per batch translation queue with `BatchLimitDialog` fallback to translate the first 8 pages or upgrade to Pro.
+  - Pro features: Unlimited batch translation queues, Smart Image Upscaler, Sound Effects (SFX) translation, Free-text translation, and manual inpainting brush retouching tools.
+- **Manual Canvas Inpainting & Touch-up Brush**:
+  - Added freeform brush tool (`BrushStroke`, `BrushControlCard`) to the interactive bubble editor for manual inpainting, artifact erasing, and background reconstruction.
+  - Full undo/redo history for brush strokes with configurable radius and mode.
+- **Standalone Offline License Generator**:
+  - Added single-file HTML/WebCrypto generator (`tools/license-generator.html`) with instant RSA key signing, verification, and Facebook DM reply formatting.
+  - Added local development launcher script (`tools/serve.py`) for desktop and mobile browser access over LAN.
+
+### Changed
+
+- **Pro Settings Auto-Sanitization & Downgrade Safety**:
+  - `SettingsRepository` and `KzktApplication` automatically sanitize and disable Pro-only settings (Upscaler, SFX, Free-text) on app launch and license revocation if the device is not activated with a valid Pro license.
+- **Pricing & Tier Badges**:
+  - Displayed lifetime Pro license price (`Rp10.000 / $0.75`) in the Free tier activation card, batch limit dialog, and Settings menu.
+
+### Fixed
+
+- **Batch & Single Translation State Flush**:
+  - Fixed issue where "Retry Failed" action button incorrectly appeared after successful single-page translation by snapshotting `pendingStatus` during queue flushes in `MainViewModel`.
+  - Fixed global `failedCount` filtering in `MainScreen` and `TranslateActionButtons` to strictly count failed pages within currently selected files.
+
+## [v1.39.2] - 2026-09-09
+
+### Fixed
+
+- **Batch Bubble Drops & Partial Translations**:
+  - Batch translation with 6+ pages now retries OCR vision fallbacks via `translateChunkWithCoverageRetry` (split `(n+1)/2` retry), ensuring bubbles missed by the first vision call are retried in smaller mosaics instead of being silently dropped.
+  - Introduced proportional mosaic height (`max(6000, 6000*chunkSize/20)` up to 9000px for 30-bubble chunks) in `ChunkTranslator` to avoid over-shrinking large batch mosaics that made text unreadable for vision LLMs.
+- **Mixed Language Output (ID/EN) — Language Enforcement**:
+  - Added `LANGUAGE RULE (CRITICAL)` in `Constants.buildPrompt` and rule `0` in `buildOcrPrompt` forcing 100% output in `targetLanguage` even when input already contains English.
+  - Updated `ChunkTranslator.repairJsonOutput` to keep repaired JSON in `targetLanguage` instead of falling back to English.
+- **Inpainting Cleanup & Edge Text Preservation**:
+  - Made `isLight` detection adaptive (`mean>128 && whiteRatio>0.35`) to correctly handle gray/cream bubbles with screentone.
+  - Narrowed fallback interior inset from 10% to 3% and relaxed `isBorderOrOuterArt` thresholds (`0.35->0.50, 0.04->0.07`) so large dialogue/shout bubbles are no longer excluded as border art.
+  - `ImageInpainting.inpaintTranslated` now returns `Set<inpaintedIds>` and `ResultRenderer` draws a solid `bgColor` fallback patch when inpainting fails, preventing double-text/ghost strokes. Applied to both `BatchPageTranslator` and `SinglePageTranslator`.
+
 ## [v1.39.1] - 2026-09-08
 
 ### Added
