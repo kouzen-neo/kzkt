@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [v2.1.0] - 2026-09-20
+
+### Added
+
+- **Single-Page Re-translation in Reader / Gallery (Pro)**:
+  - Added "Re-translate Page" action button in the fullscreen Manga Reader bottom bar.
+  - Allows re-scanning and re-translating individual pages without re-running the entire queue or touching other translated pages.
+  - Configurable options dialog with toggles for Free Text (outside speech bubbles) and Sound Effects (SFX), plus a direct shortcut to the Touch-up Editor.
+  - Background execution with a non-intrusive progress modal and instant live page reload upon completion.
+- **Per-Bubble Auto-Translation in Touch-up Editor (Pro)**:
+  - Added dedicated Auto-Translate button in `BubbleEditCard` for existing bubbles or newly drawn boxes (`Add Box`).
+  - Automatically crops the box area from the original page, extracts text with Google ML Kit OCR (with vision model fallback), inpaints the underlying artwork, and translates via the active LLM provider.
+  - Integrated into the editor undo/redo history for seamless adjustments.
+- **Optional Outline Thickness for Free Text & Touch-up Editor**:
+  - Added "Thick free-text outline" toggle in Settings -> Text & Rendering, automatically applying a protective 3.2x outline to text outside speech bubbles to cover noisy background art.
+  - Added per-bubble outline thickness control (`None`, `Normal`, `Medium`, `Thick`, `Heavy`) in the Touch-up Editor bottom panel.
+  - Enabled horizontal scrolling on the Touch-up Editor typography toolbar for comfortable one-handed mobile ergonomics.
+
+### Changed
+
+- **Pro Feature Gating & Visual Indicators**:
+  - Re-translate Page and Touch-up Bubble Auto-Translation are gated to KZKT Pro with clear visual PRO badges.
+  - Updated Pro feature dialog descriptions to reflect newly added capabilities.
+
 ## [v2.0.0] - 2026-09-12
 
 ### Added
