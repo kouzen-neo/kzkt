@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [v2.1.1] - 2026-09-22
+
+### Changed
+
+- **KZKT Pro Annual Licensing & Pricing Update**:
+  - Updated license model from lifetime to annual subscription (`Rp20.000 / $3.00 / year`).
+  - Added cryptographic offline expiration date verification (`expiresAt`) in `LicenseManager` for `pro_annual` and `pro_yearly` license tiers.
+  - Retained full backward compatibility for existing permanent `pro_lifetime` licenses.
+  - Updated in-app price badges, descriptions, and feature dialogs across `LicenseDialog` and `SettingsSections`.
+  - Updated license generation tools (`license-generator.html`, `index.html`, and `license_generator.py`) to issue 1-year annual licenses by default with ready-to-send reply templates.
+
+### Fixed
+
+- General bug fixes and stability improvements.
+
 ## [v2.1.0] - 2026-09-20
 
 ### Added
