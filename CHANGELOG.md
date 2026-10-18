@@ -6,6 +6,56 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [v2.2.0] - 2026-10-19
+
+### Added
+
+- **AI Inpainting Engine (Accurate Mode)**:
+  - Added on-device deep learning inpainting engine specialized for manga and comics to seamlessly reconstruct screentones, line art, and complex background textures.
+  - Hybrid inpainting routing: instant processing for solid dialogue bubbles and neural inpainting for text over artwork and freeform regions.
+  - Integrated on-demand model downloader in Settings with real-time progress tracking and storage management.
+- **Touch-up Editor Enhancements**:
+  - Added Hide Text mode (`Subtitles` toggle) in the top bar to view pristine inpainting canvas without text or bounding box obstructions.
+  - Added exit confirmation dialog on close/cancel/back to prevent accidental loss of edits or brush strokes.
+  - Added Magic Inpaint Brush: cleanly erase text, sound effects, and unwanted artifacts with a single finger swipe.
+  - Added History / Restore Brush: selectively paint back original artwork areas without losing edits.
+  - Added Smart Contour Snap: automatically locks manual brush and eraser strokes within speech bubble borders.
+  - Added Lasso Tool: easily select and box non-rectangular dialogue and sound effect regions.
+  - Added Text Tilt: rotate dialogue text (-45° to +45°) to naturally fit slanted action bubbles.
+  - Added Color Palette & Eyedropper: customize text fill and outline stroke colors with quick swatches or sample colors directly from the page.
+  - Added Absolute Pixel Font Sizing: precise pixel slider (4px-100px) with one-tap Auto-fit reset.
+  - Added background preservation option for per-bubble Auto-Translate (`Keep` by default to keep artwork intact, switchable to `Erase`).
+- **Free Tier Enhancements**:
+  - Unlocked Single-Page Re-translation in Reader for all Free tier users.
+  - Increased Free tier batch translation limit from 8 to 10 pages per queue.
+- **New Built-in Manga Font**:
+  - Updated default comic font to Manga Temple for cleaner dialogue lettering.
+- **Dialogue Context Memory (Cross-Page Continuity)**:
+  - Carries rolling recent dialogue context across sequential pages and chunks during translation.
+  - Maintains consistent character names, pronouns, gender identity, and tone throughout chapter batches.
+  - Automatically seeds preceding page context when re-translating individual pages in the Reader.
+
+### Changed
+
+- **Settings Screen Restructuring & Simplification**:
+  - Consolidated Pipeline & Quality settings into clean unified card groups with consistent leading icons and concise descriptions.
+  - Replaced toggle switches with inline option chips for Bubble Inpaint (`Keep` / `Erase`).
+  - Integrated OCR Script and Inpainting Engine / Bubble Inpaint into expandable accordion dropdowns under parent items.
+  - Moved Text Inpainting controls into Text & Rendering.
+  - Relocated KZKT License status card below Appearance to give immediate focus to translation settings.
+  - Renamed editor header from "Touch-up Editor" to "Editor" for clean top bar ergonomics.
+
+### Fixed
+
+- Resolved issue where repeated edits failed to update files in `Download/KZKT` by adding Scoped Storage ContentResolver writing and automatic MediaScanner synchronization.
+- Fixed inpaint brush bleeding into surrounding artwork by strictly scoping patches with alpha mask clamping (`blendInpaintedPatch`).
+- Fixed inpaint brush inadvertently erasing prior restore brush strokes by auto-baking active strokes into the base canvas.
+- Fixed free text losing thick outlines when opening in the Touch-up Editor.
+- Fixed text font size unexpectedly collapsing to 8px by removing redundant down-scaling and adjusting bubble padding thresholds.
+- Resolved canvas loading delay and temporary text overlap when opening the Editor.
+- Fixed pan and zoom gestures inadvertently interrupting active retouching tools.
+- General stability improvements, memory optimizations, and security hardening.
+
 ## [v2.1.1] - 2026-09-22
 
 ### Changed
