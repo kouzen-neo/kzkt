@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [v2.2.1] - 2026-10-22
+
+### Fixed
+
+- **Multi-Page Batch Translation Stability**:
+  - Replaced page-prefixed bubble IDs (`1_1`, `2_3`) with sequential numeric IDs across the batch queue to prevent vision models from dropping or rewriting page prefixes.
+  - Added bare-ID fallback resolution in `BatchTranslationPlanner` to guarantee dialogue matches even if a provider alters prefix formatting.
+  - Constrained vision chunk size in batch mode to preserve high-resolution text legibility for lengthy speech bubbles.
+- **Coverage Retry & Cache Integrity for Skipped Bubbles**:
+  - `hasTranslation` now verifies that translation values are non-empty and not `"SKIP"`, allowing skipped bubbles to enter smaller chunk retries instead of being silently abandoned.
+  - Excluded `"SKIP"` entries from being saved into the local translation memory cache to prevent persistent bubble skips on re-translation.
+- **Inpainting Overlap & Border Protection**:
+  - Masked copy-back in `ImageInpainting`: inpainting results are now pasted back strictly using `textMask`, preventing expanded margins of adjacent or merged speech bubbles from overwriting each other's cleaned text.
+  - Removed aggressive `isTooWide` and `isTooThin` bounding box filters during canvas rendering so translated wide dialogue and narration boxes are properly drawn.
+- **Mosaic Label Spacing**:
+  - Made the mosaic left margin dynamic based on the widest label ID, preventing multi-digit or free-text labels (`ft10`, `ft11`) from overlapping crop artwork.
+
 ## [v2.2.0] - 2026-10-19
 
 ### Added
