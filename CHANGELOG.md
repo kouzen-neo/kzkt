@@ -6,6 +6,54 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [v2.3.0] - 2026-10-29
+
+### Fixed
+
+- **Tall Strip Detection (Webtoon / Manhwa)**:
+  - Pages taller than twice their width are now split into overlapping vertical tiles before YOLO bubble detection, so bubbles on long strips are no longer shrunk to a few pixels and missed.
+- **Reader Sharpness and Layout**:
+  - Reader decoding now scales by page width instead of the longest edge, so tall strips stay sharp in Webtoon mode.
+  - Tall strips in page mode are shown full width and scroll vertically instead of shrinking to an unreadable sliver.
+  - Webtoon mode reserves each page's real height from the image header, preventing the list from jumping while pages load, and leaves room below the last page for the floating bottom bar.
+- **Tall Strip Filters and OCR**:
+  - Box filters that compare a bubble against the page size (too flat, too thin, SFX area) now measure against one tile on tall strips, so bubbles are no longer discarded as "flat" next to a 12000 px page.
+  - Free text detection (ML Kit) now runs tile by tile on tall strips instead of downscaling the whole strip until text is unreadable.
+- **Colored Bubble Erasing**: Colored or textured speech bubbles whose background matches neither the light nor the dark fixed thresholds now use an Otsu split between text and background, so their original text is erased instead of being left under the translation.
+- **AI Inpainting (Accurate Mode)**: With a margin crop, the bubble interior is now chosen among background regions that do not touch the crop edge, so the white page outside a bubble can no longer be mistaken for the interior and leave the original text unerased.
+- **Missing Bubbles After Retry**: Speech bubbles the model still left out after the smaller-chunk retry are now sent one per request (up to 10), so a dropped bubble is translated instead of being left in the original language.
+- **Translation Memory Integrity**: Answers are only written to the translation memory when the model returned an entry for every bubble in the request, so a confused mosaic can no longer store a wrong translation that repeats on every re-run.
+- **Complete JSON Answers**: Translation prompts now state that every ID must appear in the answer and that SKIP replaces omission for decoration, labels, and non-dialogue.
+- **Stability**: Removed non-null assertions in the result renderer so an unmatched bubble ID is skipped instead of crashing.
+- **Editor Page Stays Put**: Opening the bubble, picture or brush panel no longer resizes the page, so it no longer looks like it zooms in and out. The panel now floats over the bottom of the page, and when it would hide the selected bubble or picture the page slides up just enough to keep it visible. A handle on the panel folds it down to its first row.
+- **Prompt Name**: Translate and Settings now use the same name for the active prompt. Classic is shown as "Classic"; Settings no longer shows a genre ("Standard") while Classic is active.
+- **Page Count Wording**: The history detail list says "1 page" for a single page instead of "1 pages".
+- **Hidden Text Is Not Selectable**: With Hide text on, bubbles are no longer selected or moved by tapping their area, and the bubble panel closes when the text is hidden.
+- **Image Crop Handles**: Resizing the crop frame now follows the finger exactly. With a ratio preset (1:1, 16:9, ...) the frame no longer drifts from the finger after hitting an edge, a small frame can be enlarged again because the nearest corner is the one that moves, and the frame can no longer shrink below 48 dp on screen where the corners used to pile up.
+
+### Added
+
+- **Manual Image Editing (PRO)**: The + button in History adds one or more images (up to 50) and opens the first one in the editor straight away, without translating. Manual pages are kept in Download/KZKT/manual and are marked "Manual edit" in History. Use Add Box to type text and the inpaint brush to erase it. Translate can be run from the entry later, which replaces the manual entry with the translated result; manual edits are not carried into that translation.
+- **Multiple Fonts**: Import several .ttf, .otf or .ttc fonts at once (up to 20 MB each). The Fonts dialog in Settings previews each font in itself, marks the one used for translated pages, and deletes fonts. Files that are too large or not valid fonts are skipped with a message, and duplicate names are kept side by side.
+- **Fonts in the Editor**: Choose a font per bubble from the built-in fonts (Default, Manga Temple, Kosugi Maru, Serif, Sans-Serif, Monospace) or any imported font, each previewed in its own typeface, and import more fonts without leaving the editor. Batch Edit can apply one font to every bubble. A bubble whose font was deleted falls back to the default font.
+- **Add Image in the Editor (PRO)**: Paste a picture from the gallery or a piece of the page itself onto a page. Pictures keep their original source, so they can be moved, resized, rotated, faded, re-cropped, and reordered relative to the text even after the page is saved and reopened from History. Pictures carry over when a page is translated again, and stay visible and deletable if PRO expires.
+- **Verbose Logs Diagnostics**: With Verbose Logs on, every translated ID is logged with its type and result, and the mosaic image sent to the vision provider is saved to `Download/KZKT/debug` so wrong or swapped translations can be traced to the exact crop and label.
+
+### Changed
+
+- **Non-Dialogue Text**: Translation prompts now tell the model to answer SKIP only for copyright notices, credits, watermarks, signatures, page numbers, and small character name tags in any language, and never for speech or thought bubbles. Free text regions that exactly match a Glossary term, or that contain only symbols, are left untouched.
+- Reader bottom bar actions now show a caption, and reader top bar descriptions reflect the current state.
+- Editor: bubble text field grows up to 5 lines, color chips are labeled "Text" and "Outline", and the smallest PRO badges are enlarged.
+- Editor tool dock: Select, Box, Lasso, Image and Retouch now carry captions, the active tool is highlighted, and Save is a labeled button. The duplicate close button at the bottom is gone (use the X at the top). Switching tools gives a light haptic tick, and Select returns to bubble editing from any mode.
+- The "LaMa Manga AI Active" line is removed. The Inpaint tool only shows a short note with a Download button when the 196 MB AI model is missing; the result toast still reports which engine ran.
+- Add Image source picker: the plain pop-up menu is replaced by a panel in the same style as the other editor panels, with three tiles (Gallery, Original page, Current page). The mode hints in the top bar are shorter so they no longer get cut off.
+- Editor overflow menu: restyled to match the editor panels (rounded surface, same elevation). Hide text and Show original text are switches that show their state, and Batch edit sits below a divider.
+- Editor top bar: Undo, Redo and a clearer Compare-with-original button stay in view; Hide text, OCR text and Batch edit moved into a menu that shows a dot while a view option is on. The subtitle explains the active mode.
+- Editor bubble panel: the controls are grouped into Font, Color and Size tabs. Fonts are cards drawn in their own typeface (built-in and imported, with an Import card at the end), text and outline colors are swatches with an eyedropper, outline width is one 5-step control, and alignment is three buttons instead of a cycling icon. "BG: Keep/Inpaint" is now a clear "Inpaint BG" switch.
+- Editor brush and picture panels follow the same style: labeled brush tools (Brush, Eraser, Pick, Restore, Inpaint, Snap) with PRO tags, color swatches, aligned sliders with a reset chip, and a two-choice control for placing a picture below or above the text. Every panel folds down from its handle.
+- Editor page overlay: bubble boxes no longer use a rainbow of colors. The selected bubble or picture gets a thick accent outline with large handles, other bubbles are thin white lines (dimmed while one is selected), and free text such as name tags is dashed amber, each with a dark underlay so it stays readable on any artwork.
+- Translation Style sheet: removed the internal prompt version from the "Classic" label, simplified the custom instructions hint, and clearing the translation cache now asks for confirmation.
+
 ## [v2.2.1] - 2026-10-22
 
 ### Fixed
