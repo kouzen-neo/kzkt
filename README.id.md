@@ -44,6 +44,8 @@ KZKT adalah aplikasi Android untuk menerjemahkan manga, manhwa, manhua, dan komi
 - **Multi-Script Local OCR**: Pengenalan teks Google ML Kit untuk Bahasa Jepang, Latin, Korea, dan Mandarin dengan kemampuan deteksi area teks bebas.
 - **Tipografi Cerdas & Inpainting**: Inpainting OpenCV multi-core tanpa jeda, pembungkusan teks kurva elips diamond, perataan vertikal optik, dan pemenggalan suku kata otomatis.
 - **Reader & Editor Touch-up Bawaan**: Baca hasil per halaman atau scroll vertikal ala webtoon, dan ketuk balon kata mana pun untuk mengedit teks secara langsung.
+- **Editor Touch-up Lanjutan**: Kontrol balon bertab dengan pratinjau font, swatch warna, dan eyedropper. Tambahkan gambar ke halaman lalu atur crop, putar, transparansi, dan urutannya terhadap teks (PRO).
+- **Font Kustom**: Impor font `.ttf`, `.otf`, atau `.ttc` sendiri dan pilih per balon atau sebagai font default untuk hasil terjemahan.
 - **Pembaca PDF Instan**: Membuka dokumen PDF terjemahan berukuran besar secara lazy-load per halaman tanpa waktu tunggu.
 - **Glosarium & Memory Terjemahan**: Kamus istilah kustom untuk menjaga konsistensi nama karakter dan istilah khusus.
 - **Background Worker & Auto-Updater**: Proses translasi tetap berjalan di latar belakang via WorkManager, dilengkapi pemeriksa update otomatis dari GitHub Releases.
