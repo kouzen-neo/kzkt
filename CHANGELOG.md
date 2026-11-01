@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [v2.3.5] - 2026-11-01
+
+### Added
+
+- **Inpaint Box Area (1-Tap)**: Directly erase original text or sound effects underneath any selected speech bubble or free-form box in the touch-up editor using the inpaint magic wand tool.
+- **Text Overflow Warning**: Real-time warning badge in the editor when manual font scaling or lengthy text exceeds the bubble boundaries.
+- **QRIS Payment Dialog**: Tap "Pay with QRIS" in the Supporter dialog to display the QRIS merchant code for instant mobile banking / e-wallet payment.
+- **Comic Font Presets**: Added Casual and Cursive system fonts to the editor font selector.
+
+### Changed
+
+- **Free Tier Full-Feature Showcase**: All features (LaMa AI inpainting, Smart Image Upscaler, SFX translation, free text translation, manual image editing, and editor layer tools) are now available in the Free tier, with queue processing limited to 1 page at a time. Importing ZIP/CBZ archives, PDFs, or folders on the Free tier imports the first page only. Supporter tier unlocks unlimited batch translation.
+- **Supporter Pass Rebranding & Pricing**: Rebranded the frontend license interface to Supporter Pass with a simple Rp15.000 / year annual subscription and direct "Pay with QRIS" checkout.
+- **PRO License Verification**: Background license validation verified directly at engine execution boundaries.
+- **Accurate Inpainting Speed**: In Accurate mode, LaMa runs only where text sits on textured backgrounds; flat backgrounds use the faster Telea fill.
+
+### Fixed
+
+- **Dark Bubbles in Accurate Mode**: Light or dark background thresholds are now evaluated strictly inside the bubble bounds, so dark bubbles with white text are cleaned thoroughly without ghosting.
+
 ## [v2.3.0] - 2026-10-29
 
 ### Fixed
