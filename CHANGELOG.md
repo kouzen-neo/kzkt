@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [v2.3.6] - 2026-11-02
+
+### Fixed
+
+- **Editor Image Layer Drag & Resize (Free Tier)**: Fixed an issue where pasted image layers in the touch-up editor could not be dragged or resized via corner handles without an active Supporter license, causing touch gestures to pan the entire canvas instead.
+
 ## [v2.3.5] - 2026-11-01
 
 ### Added
