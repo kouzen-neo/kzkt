@@ -3,7 +3,6 @@
   <h1>KZKT</h1>
 
   <p>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge&logo=open-source-initiative&logoColor=white" alt="License: MIT"></a>
     <a href="https://github.com/kouzen-neo/kzkt/releases"><img src="https://img.shields.io/github/v/release/kouzen-neo/kzkt?style=for-the-badge&color=teal" alt="Latest Release"></a>
     <a href="https://developer.android.com"><img src="https://img.shields.io/badge/Android-API%2026%2B-3DDC84.svg?style=for-the-badge&logo=android&logoColor=white" alt="Android SDK"></a>
     <a href="https://ai.google.dev/edge/litert"><img src="https://img.shields.io/badge/Google_LiteRT-GPU_Accelerated-4285F4.svg?style=for-the-badge&logo=google&logoColor=white" alt="LiteRT"></a>
@@ -108,9 +107,3 @@ KZKT is made possible by open-source technologies and community projects:
 - [OpenCV Android SDK](https://opencv.org/) for computer vision and inpainting.
 - [ONNX Runtime](https://onnxruntime.ai/) for YOLO inference.
 - [Google ML Kit](https://developers.google.com/ml-kit) for text recognition.
-
----
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).

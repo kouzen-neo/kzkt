@@ -3,7 +3,6 @@
   <h1>KZKT</h1>
 
   <p>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge&logo=open-source-initiative&logoColor=white" alt="License: MIT"></a>
     <a href="https://github.com/kouzen-neo/kzkt/releases"><img src="https://img.shields.io/github/v/release/kouzen-neo/kzkt?style=for-the-badge&color=teal" alt="Rilis Terbaru"></a>
     <a href="https://developer.android.com"><img src="https://img.shields.io/badge/Android-API%2026%2B-3DDC84.svg?style=for-the-badge&logo=android&logoColor=white" alt="Android SDK"></a>
     <a href="https://ai.google.dev/edge/litert"><img src="https://img.shields.io/badge/Google_LiteRT-GPU_Accelerated-4285F4.svg?style=for-the-badge&logo=google&logoColor=white" alt="LiteRT"></a>
@@ -97,9 +96,3 @@ Unduh file APK rilis terbaru langsung dari **[GitHub Releases](https://github.co
 
 - **Kredensial Terenkripsi**: Semua API Key dan token disimpan terenkripsi di perangkat menggunakan Android Keystore dan enkripsi perangkat keras AES-GCM.
 - **Privasi Total**: Saat menggunakan provider LiteRT, deteksi YOLO, dan OCR lokal, seluruh pemrosesan data berlangsung 100% di perangkat Anda tanpa lalu lintas jaringan.
-
----
-
-## Lisensi
-
-Proyek ini dilisensikan di bawah [Lisensi MIT](LICENSE).
