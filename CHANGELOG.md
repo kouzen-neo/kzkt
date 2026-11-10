@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [v3.0.0] - 2026-11-11
+
 ### Added
 
 - **Per Minute limit** (Settings → Tweak → Per Minute): caps how many requests KZKT sends in a minute. It is on by default for Google Gemini (12 a minute, under its free plan's limit of about 15) and off for other providers. When KZKT reaches the cap it waits and says so in the log, and a dialog explains why, once, with a button to turn the limit off. A provider's "too many requests" answer now waits a full minute when the limit is on.
