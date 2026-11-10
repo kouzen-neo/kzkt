@@ -23,6 +23,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Faster batches**: the next group of pages is detected while the current one waits for the AI, and translated pages are cleaned and lettered two at a time.
 - **Supporter Pass via Discord**: the Supporter dialog sends you to the Discord #license channel (receipt + Device ID) instead of Facebook.
 
+## [v2.3.7] - 2026-11-05
+
+### Changed
+
+- **Free tier batch limit raised from 1 to 3 pages**: the queue, the file picker, manual image import and the batch-limit dialog now allow up to 3 pages at a time. ZIP/CBZ archives, PDFs and folders import their first 3 pages instead of only the first. Supporter still unlocks unlimited batches.
+
 ## [v2.3.6] - 2026-11-02
 
 ### Fixed
