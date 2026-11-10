@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Per Minute limit** (Settings → Tweak → Per Minute): caps how many requests KZKT sends in a minute. It is on by default for Google Gemini (12 a minute, under its free plan's limit of about 15) and off for other providers. When KZKT reaches the cap it waits and says so in the log, and a dialog explains why, once, with a button to turn the limit off. A provider's "too many requests" answer now waits a full minute when the limit is on.
+- **Requests at once**: up to 3 translation requests go to the AI at the same time (Settings → Tweak → Requests At Once, 1 to 8; the on-device model stays at 1). Requests still start at least the Min Request Delay apart.
+- **Learn character names**: the AI reports the names, places and terms it meets; names seen in 2 translation runs are used like glossary terms in the next ones, so they are spelled the same way every chapter. The Glossary lists them with Keep (make it a rule) and Forget. Turn it off in Settings → Pipeline & Quality → Learn Character Names.
+- **Light model**: an optional cheaper model of the same provider for small bubbles and short lines (Settings → provider card → Light model). The main model takes anything it misses. Saves cost, not time.
+- **Test connection in the welcome guide**: the API key step has the key field (plus Base URL and Model for a Custom server) and a connection test.
+- **Style presets in the editor**: a new Style tab with Dialogue, Shout, Thought, Narration and SFX, plus your own presets (Save current).
+- **Line and letter spacing** sliders in the editor's Size tab.
+- **Inline bold and italic**: wrap words in `**bold**`, `*italic*` or `***both***` in a bubble's text.
+- **Multi-select, copy and paste**: long-press bubbles to select several, then style, copy or delete them together; paste copied bubbles on the same or another page.
+
+### Changed
+
+- **Faster batches**: the next group of pages is detected while the current one waits for the AI, and translated pages are cleaned and lettered two at a time.
+- **Supporter Pass via Discord**: the Supporter dialog sends you to the Discord #license channel (receipt + Device ID) instead of Facebook.
+
 ## [v2.3.6] - 2026-11-02
 
 ### Fixed
