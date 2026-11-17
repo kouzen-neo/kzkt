@@ -4,7 +4,44 @@ All notable changes to KZKT are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v3.0.5] - 2026-11-18
+
+### Added
+
+- **Buy the Supporter Pass in the app.** Support Developer > Pay with QRIS: pick a plan, enter your email, and scan (or Save QR and pick it in your e-wallet). Once paid, the code activates itself; no receipt to send. The 0.7% QRIS fee is added. An open order survives closing the app.
+- **A clearer Supporter screen.** It lists what Supporter adds, shows the plans with their price per month, and when active shows the code, the end date and the days left.
+- **Renew in the app.** Supporter > Renew this code (or tick Renew when a code has ended): the code stays the same and its end date moves on.
+- The old QRIS picture, Facebook and the Discord #license receipt step are gone; Discord is the community and the place to ask for help.
+- **Erase text**: an erase-only run for typesetters. It finds the lettering on a page (speech bubbles, plus free text when that setting is on) and cleans it with LaMa or the light inpainter, with no AI provider and no translation. The editor opens with empty boxes on the bubbles, ready to fill in. History has Erase text on all pages; pages already typeset or with pasted pictures are left alone.
+- **Page actions in the editor**: Detect bubbles, OCR free text, Erase text and Translate page. Translate page asks whether to translate the whole page from scratch or only the boxes found, and whether to erase the original text. Each action is undone with one undo.
+- **Undo after reopening**: the editor keeps the undo and redo steps of a page after Save, so they still work when the page is opened again (up to 8 page pictures per page).
+- **Comic fonts**: Comic Neue, Patrick Hand SC, Bangers, Luckiest Guy and Permanent Marker.
+
+### Changed
+
+- **Supporter codes**: the Supporter Pass now comes as a code (`KZKT-XXXX-XXXX-XXXX`) that you enter in Settings → Support Developer; no need to send your Device ID. The licence renews itself when you are online and keeps working 30 days without internet. Moving to a new phone: press Remove this device on the old one, or remove the old phone from the list when you activate on the new one. Keys from before still work; earlier buyers get a code by message.
+- **Supporter plans**: 3 months (Rp7.500), 1 year (Rp15.000) or 3 years (Rp40.000). The Supporter dialog shows the plan's end date and reminds you 14 days before it ends.
+- **Pages in number order.** Numbered pages from a folder, a ZIP/CBZ or several picked files are translated as 1, 2, 3 ... 10, 11 instead of 1, 10, 11, 2.
+- **A clearer, calmer translation log.** Each group says which pages it covers ("Pages 1-6/43"), each request names its pages and ends with how many came back and how long it took, and every page line carries its page number instead of a long file name. Pages detected or cleaned in parallel are logged in page order, and lines no longer arrive shuffled. Texts the AI skips are a plain note ("3 left as is (page 6)"), not a red warning.
+- **Editor progress per bubble.** Translate this bubble and Erase under the box show what they are doing in the top bar ("Reading the text...", "Translating with Google Gemini...", "Erasing the original text..."), and the erase button shows a spinner.
+- **Progress with time left.** While translating, a card says what is happening and on which pages ("Translating pages 7-12", "Cleaning and lettering pages 1-6", "Waiting for the AI's limit"), how many pages are done and to go, roughly how long is left (as in KZRS) and how long it has run. The counter shows the pages actually done.
+- **View in App starts at page 1.** The reader opened from the result card begins at the first page instead of the latest one translated.
+- **Page numbers in History folders.** Inside a folder each page is titled "Page 12" (its place in the run, the same number as in the log), with the file name shortened in the middle below it so a long manga name no longer hides which page it is.
+- **Bubble detection about three times faster.** The detector ran three times on every page for its three confidence stages; it now runs once and the result is filtered three ways. Same bubbles found.
+- **Half the download for the detector.** Its weights are stored at half precision (52 MB instead of 104 MB); the bubbles found are the same.
+- **Captions are translated.** Narration boxes such as "Meanwhile..." are no longer mistaken for credits and skipped.
+- **Rate limits:** the wait Gemini asks for (`retryDelay`) is honoured.
+- **Fewer requests for credit lines.** With Local OCR, a text the model leaves out twice (usually a copyright or scanlation credit) is kept as SKIP instead of being sent again as a picture, which cost up to four extra requests per line.
+- **Model downloads continue where they stopped.** LaMa and on-device AI models keep the part already downloaded when the connection drops or the app is closed; tapping Download again fetches only the rest.
+- **Welcome tour on first launch.** Shown once to new users (not to those who already set a key), shorter and in one fixed size: what KZKT does, connect an AI (provider picker with Google Gemini first, key, model, test, link to Google AI Studio's API keys page), picking pages, reading and touching up. Still available from Settings.
+- **Faster, steadier OCR mode.** Text outside bubbles is read once (the text found while detecting it is reused); a deliberate "SKIP" from the AI is accepted instead of asking vision again (one request less per page); Auto runs the Japanese, Korean and Chinese models only (each also reads Latin); starred labels such as *BONK* are not merged into nearby dialogue; repeated regions from several models are kept once.
+- **A run started while the app is in the background no longer fails** (Android 12+ refused the foreground notification); it continues as background work.
+- **Learned names skip dialogue**: whole lines the AI listed as "names" are no longer learned or sent to the prompt.
+- **Better on-device OCR.** Bubble and box crops are prepared before ML Kit reads them (white margin, small crops enlarged, light text on dark panels inverted), so lettering like "AH!" on black or "CRASH!" at a crop edge is read correctly. Erasing free text now also removes the outline around the letters. With SFX translation off, the OCR prompt skips pure sound effects, like the vision prompt.
+- **Read bubbles: Auto / Vision / Local OCR** (Settings, Pipeline & Quality, replaces On-Device Local OCR). Auto checks once whether the chosen model can read images (a tiny picture of a digit) and uses vision when it can, on-device OCR when it cannot; a model that refuses an image during a run is switched to OCR for the next pages. Test API also says whether the model reads images. In the editor, a text-only model gets no pictures: boxes OCR cannot read are named so you can type their text.
+- **Free tier per day**: Free now translates 5 pages a day and opens 3 manual pages a day (local day), instead of 3 pages per run. Archives, PDFs and folders are cut to the pages left today. Failed pages are not counted. The Translate screen and Settings show what is left.
+- **Manual moved to the Translate screen**: a Manual button under Pick File and Pick Folder opens one image straight in the editor, without translating. The add-image button in History is gone.
+- **Colored box outlines**: boxes in the editor are outlined in different colors, so neighboring boxes are easier to tell apart.
 
 ## [v3.0.0] - 2026-11-11
 
