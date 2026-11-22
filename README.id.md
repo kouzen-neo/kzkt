@@ -43,8 +43,9 @@ KZKT adalah aplikasi Android untuk menerjemahkan manga, manhwa, manhua, dan komi
 - **Multi-Script Local OCR**: Pengenalan teks Google ML Kit untuk Bahasa Jepang, Latin, Korea, dan Mandarin dengan kemampuan deteksi area teks bebas.
 - **Tipografi Cerdas & Inpainting**: Inpainting OpenCV multi-core tanpa jeda, pembungkusan teks kurva elips diamond, perataan vertikal optik, dan pemenggalan suku kata otomatis.
 - **Reader & Editor Touch-up Bawaan**: Baca hasil per halaman atau scroll vertikal ala webtoon, dan ketuk balon kata mana pun untuk mengedit teks secara langsung.
-- **Editor Touch-up Lanjutan**: Kontrol balon bertab dengan pratinjau font, swatch warna, dan eyedropper. Tambahkan gambar ke halaman lalu atur crop, putar, transparansi, dan urutannya terhadap teks (PRO).
-- **Font Kustom**: Impor font `.ttf`, `.otf`, atau `.ttc` sendiri dan pilih per balon atau sebagai font default untuk hasil terjemahan.
+- **Editor Touch-up untuk HP**: Enam alat (Select, Brush, Inpaint, Text, Bubble, Picture) dengan panel ringkas yang bisa di-scroll. Hapus teks atau kembalikan gambar asli dengan kuas, atau kembalikan satu halaman sekaligus; gambar balon kata dengan ekor yang bisa ditarik; tambahkan gambar lalu atur crop, putar, transparansi, dan urutannya terhadap teks (PRO).
+- **Halaman Manual**: Lettering halaman tanpa menerjemahkan: pilih gambar dari Gallery atau Files, atau PDF, CBZ, ZIP, EPUB, lalu pindah antar halaman dengan panah yang otomatis menyimpan.
+- **Font Kustom**: Impor font `.ttf`, `.otf`, `.ttc` atau `.woff`, atau ZIP berisi font (folder dan ZIP di dalamnya ikut dicari), dan pilih per balon atau sebagai font default untuk hasil terjemahan.
 - **Pembaca PDF Instan**: Membuka dokumen PDF terjemahan berukuran besar secara lazy-load per halaman tanpa waktu tunggu.
 - **Glosarium & Memory Terjemahan**: Kamus istilah kustom untuk menjaga konsistensi nama karakter dan istilah khusus.
 - **Background Worker & Auto-Updater**: Proses translasi tetap berjalan di latar belakang via WorkManager, dilengkapi pemeriksa update otomatis dari GitHub Releases.

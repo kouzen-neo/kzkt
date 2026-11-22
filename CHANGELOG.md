@@ -4,6 +4,41 @@ All notable changes to KZKT are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.1.0] - 2026-11-22
+
+### Added
+
+- **A simpler editor for phones.** Six tools along the bottom: Select, Brush, Inpaint, Text, Bubble and Picture. Each shows only its own options in the panel above it.
+- **Brush on its own layer.** Paint with a colour, size and opacity, pick a colour from the page, rub out only the paint with the eraser, or clear all paint. The page under it is not touched until Save.
+- **Translate area.** Text > Translate area: circle text on the page and it is read and translated into a box. Boxes the area covers are replaced by one box.
+- **Translate with a note.** Retranslate a box with a short note for the AI (for example "more casual"). Recent notes are offered again.
+- **Repeat last change.** Apply the last style change to another box with one tap.
+- **Formatting inside a box**, with the same tags as KZRS: `<b>`, `<i>`, `<c=red>`, `<o=white>`, `<f=Bangers>` and `<s=150%>`. A format bar under the text field tags the selected words, or the word at the cursor. `**bold**` and `*italic*` still work.
+- **Drawn speech bubbles.** The Bubble tool draws a Box, Rounded, Oval, Thought or Shout bubble under the text, with a fill, an outline, room around the text and a tail. It covers lettering that is hard to erase.
+- **Open with KZKT.** PDF, CBZ, ZIP and EPUB files open from a file manager: a PDF in the PDF reader, the others in the manga reader.
+
+### Changed
+
+- New icons in the editor (the same set as KZRS). The rest of the app keeps its icons.
+- On phones with less than 5 GB of RAM the editor no longer loads the models before they are needed.
+- History rows for manual pages show only Translate; Erase text stays in the folder menu.
+- The Erase tool is now Inpaint, with Inpaint and Restore. The Brush keeps only Paint and Eraser.
+- Drawn bubbles are kept between redraws, so editing a page with many bubbles stays smooth.
+- A bubble's tail is aimed by dragging the round dot at its tip, as in KZRS, instead of picking one of eight arrows.
+- The Bubble panel has Delete, and a choice of text in a box or an oval (as the KZRS text shape).
+- Editor panels work like PixelLab: a row of actions on top (it scrolls sideways when it does not fit) and the options under it, which never grow taller than a set height and scroll when they are longer.
+- The Add image tiles are lighter and stay one line each (Gallery, Files, Original, Edited), so they keep one height with large system fonts.
+- Manual takes several images at once, from Gallery or Files (some phones' photo picker leaves folders out). They become one Manual folder in History, in name order, and the editor opens on the first.
+- With several pages open, the editor shows "2 / 5" with arrows: the arrow saves this page and opens the next, without going back to History.
+- Manual also takes a PDF, CBZ, ZIP or EPUB from Files: its pages become the Manual folder, named after the book. The free daily limit counts pages, and only the pages used are rendered from a PDF. Files that are not pictures are skipped.
+- Fonts import from ZIP bundles (fonts in any folder, and ZIPs inside them) and WOFF files, as in KZRS. A font imported twice is skipped.
+- Inpaint > Restore has Whole page: the original page comes back and its text boxes are removed, in one step that undo reverses.
+
+### Fixed
+
+- Dragging out a new text box sometimes made no box.
+- Moving to the next page with the arrows now saves a page left empty (every box deleted, or the whole page restored).
+
 ## [v3.0.5] - 2026-11-18
 
 ### Added

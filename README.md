@@ -43,8 +43,9 @@ KZKT is a native Android application for automatic manga and comic translation. 
 - **Multi-Script Local OCR**: ML Kit text recognition for Japanese, Latin, Korean, and Chinese with free-text region detection.
 - **Intelligent Typography & Inpainting**: Multi-core lock-free OpenCV inpainting with diamond-shaped elliptical text wrapping, optical vertical centering, and syllable hyphenation.
 - **In-App Reader & Touch-up Editor**: View translated results in single-page or continuous webtoon mode, and tap any bubble to edit text directly.
-- **Advanced Touch-up Editor**: Tabbed bubble controls with font previews, color swatches, and an eyedropper. Add pictures to a page and crop, rotate, fade, or reorder them against the text (PRO).
-- **Custom Fonts**: Import your own `.ttf`, `.otf`, or `.ttc` fonts and pick them per bubble or as the default for translated pages.
+- **Touch-up Editor for Phones**: Six tools (Select, Brush, Inpaint, Text, Bubble, Picture) with compact panels that scroll. Inpaint or restore the original with a brush, or restore the whole page at once; draw speech bubbles with a draggable tail; add pictures and crop, rotate, fade or reorder them against the text (PRO).
+- **Manual Pages**: Letter pages by hand without translating: pick images from Gallery or Files, or a PDF, CBZ, ZIP or EPUB, and move between the pages with arrows that save as you go.
+- **Custom Fonts**: Import `.ttf`, `.otf`, `.ttc` or `.woff` fonts, or a ZIP bundle of them (folders and ZIPs inside are searched), and pick them per bubble or as the default for translated pages.
 - **Instant PDF Reader**: Lazy-loaded page-by-page rendering for large translated PDF documents.
 - **Glossary & Translation Memory**: Custom terminology dictionary to enforce character names and recurring terms.
 - **Background Worker & Auto-Updater**: Translations continue in the background via WorkManager, with built-in auto-update checking for new GitHub releases.
