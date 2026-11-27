@@ -1,6 +1,7 @@
 <div align="center">
-  <img src="docs/assets/app_icon.png" width="100" alt="KZKT Logo" />
-  <h1>KZKT</h1>
+  <img src="docs/assets/app_icon.png" width="100" alt="Kazeko Logo" />
+  <h1>Kazeko</h1>
+  <p><sub>formerly KZKT</sub></p>
 
   <p>
     <a href="https://github.com/kouzen-neo/kzkt/releases"><img src="https://img.shields.io/github/v/release/kouzen-neo/kzkt?style=for-the-badge&color=teal" alt="Latest Release"></a>
@@ -15,7 +16,9 @@
   </p>
 </div>
 
-KZKT is a native Android application for automatic manga and comic translation. It detects speech bubbles on-page using on-device AI, translates text using your preferred LLM provider (or 100% offline via LiteRT on-device GPU models), erases original Japanese/Korean/Chinese text strokes, and renders natural, styled translations directly onto the page.
+> **Legacy repository.** KZKT is now **Kazeko**. New releases, downloads and the changelog will move to [kouzen-neo/kazeko](https://github.com/kouzen-neo/kazeko) (not published yet). This repository stays online for the existing releases, and installed apps keep updating from it until the move.
+
+Kazeko is a native Android application for automatic manga and comic translation. It detects speech bubbles on-page using on-device AI, translates text using your preferred LLM provider (or 100% offline via LiteRT on-device GPU models), erases original Japanese/Korean/Chinese text strokes, and renders natural, styled translations directly onto the page.
 
 <div align="center">
   <table>
@@ -102,7 +105,7 @@ Grab the latest APK directly from **[GitHub Releases](https://github.com/kouzen-
 
 ## Open-Source Acknowledgments
 
-KZKT is made possible by open-source technologies and community projects:
+Kazeko is made possible by open-source technologies and community projects:
 
 - [Google AI Edge LiteRT](https://ai.google.dev/edge/litert) for on-device LLM acceleration.
 - [OpenCV Android SDK](https://opencv.org/) for computer vision and inpainting.

@@ -1,12 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="512" height="512">
-  <rect width="108" height="108" rx="24" fill="#17171F"/>
-  <!-- Large K (left) -->
-  <path d="M33,32 L33,76" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
-  <path d="M33,52 L49,34" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
-  <path d="M33,52 L49,74" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
-  <!-- Small z (top right) -->
-  <path d="M58,32 L77,32 L58,48 L77,48" stroke="#FFFFFF" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
-  <!-- Small t (bottom right) -->
-  <path d="M60,58 L77,58" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
-  <path d="M68,52 L68,76" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
+  <rect fill="#1d1e21" x="3.4" y="3.4" width="101.2" height="101.2" rx="22"/>
+  <g transform="translate(54 54) scale(1.5) translate(-54 -54)"><path d="M38.16 57.08V35.24H42.65V46.85H44.92L48.36 40.62H53.30L48.72 48.67L53.39 57.08H48.36L44.89 50.62H42.65V57.08ZM56.08 57.08V53.19L64.22 44.51H56.38V40.62H69.51V44.51L61.38 53.19H69.84V57.08Z" fill="#f4efe6"/>
+  <path d="M42.56 62.36H65.44A3.08 3.08 0 0 1 68.52 65.44V70.72A3.08 3.08 0 0 1 65.44 73.80H42.56A3.08 3.08 0 0 1 39.48 70.72V65.44A3.08 3.08 0 0 1 42.56 62.36Z" fill="#3cc4b2"/>
+  <path d="M47.22 71.26Q46.77 71.26 46.49 70.98Q46.20 70.69 46.20 70.24Q46.20 69.78 46.49 69.50Q46.77 69.22 47.22 69.22Q47.68 69.22 47.96 69.50Q48.25 69.78 48.25 70.24Q48.25 70.69 47.96 70.98Q47.68 71.26 47.22 71.26ZM50.98 71.16V63.77H52.50V67.70H53.27L54.43 65.59H56.10L54.55 68.32L56.13 71.16H54.43L53.26 68.97H52.50V71.16ZM59.37 71.26Q58.63 71.26 58.08 70.98Q57.54 70.70 57.24 70.20Q56.94 69.70 56.94 69.03V67.72Q56.94 67.05 57.24 66.55Q57.54 66.05 58.08 65.77Q58.63 65.49 59.37 65.49Q60.12 65.49 60.66 65.77Q61.20 66.05 61.50 66.55Q61.80 67.05 61.80 67.72V69.03Q61.80 69.70 61.50 70.20Q61.20 70.70 60.66 70.98Q60.12 71.26 59.37 71.26ZM59.37 69.95Q59.81 69.95 60.05 69.71Q60.28 69.47 60.28 69.03V67.72Q60.28 67.27 60.05 67.04Q59.81 66.81 59.37 66.81Q58.93 66.81 58.70 67.04Q58.46 67.27 58.46 67.72V69.03Q58.46 69.47 58.70 69.71Q58.93 69.95 59.37 69.95Z" fill="#1d1e21"/></g>
 </svg>

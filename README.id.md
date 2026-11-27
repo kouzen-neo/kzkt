@@ -1,6 +1,7 @@
 <div align="center">
-  <img src="docs/assets/app_icon.png" width="100" alt="KZKT Logo" />
-  <h1>KZKT</h1>
+  <img src="docs/assets/app_icon.png" width="100" alt="Kazeko Logo" />
+  <h1>Kazeko</h1>
+  <p><sub>dulu bernama KZKT</sub></p>
 
   <p>
     <a href="https://github.com/kouzen-neo/kzkt/releases"><img src="https://img.shields.io/github/v/release/kouzen-neo/kzkt?style=for-the-badge&color=teal" alt="Rilis Terbaru"></a>
@@ -15,7 +16,9 @@
   </p>
 </div>
 
-KZKT adalah aplikasi Android untuk menerjemahkan manga, manhwa, manhua, dan komik secara otomatis. Balon kata dideteksi langsung di perangkat menggunakan AI (on-device), diterjemahkan via model LLM pilihan (atau 100% offline via GPU LiteRT), teks asli dihapus dengan rapi, dan hasil terjemahan di-render langsung ke halaman secara natural tanpa memerlukan akses root.
+> **Repositori legacy.** KZKT sekarang bernama **Kazeko**. Rilis baru, unduhan dan catatan perubahan akan pindah ke [kouzen-neo/kazeko](https://github.com/kouzen-neo/kazeko) (belum dipublikasikan). Repositori ini tetap online untuk rilis yang sudah ada, dan app yang terpasang tetap update dari sini sampai pindahan selesai.
+
+Kazeko adalah aplikasi Android untuk menerjemahkan manga, manhwa, manhua, dan komik secara otomatis. Balon kata dideteksi langsung di perangkat menggunakan AI (on-device), diterjemahkan via model LLM pilihan (atau 100% offline via GPU LiteRT), teks asli dihapus dengan rapi, dan hasil terjemahan di-render langsung ke halaman secara natural tanpa memerlukan akses root.
 
 <div align="center">
   <table>
