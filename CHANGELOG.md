@@ -4,6 +4,49 @@ All notable changes to Kazeko (formerly KZKT) are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.2.0] - Unreleased
+
+### Added
+
+- **Kazeko Pro.** "Supporter" is now called Pro everywhere in the app. A crown badge at the top
+  right of Settings opens the Pro dialog. Free users see the code field, Activate and Get Pro
+  (three short perks and the plans). Pro users see their code, end date, renew, device ID and
+  remove device.
+- **Buying on the website.** Get Pro and Renew open kazeko.kouzen.my.id in the browser (a message
+  shows if no browser can open it). Copy the code there and paste it in the Pro dialog. Codes you
+  already have keep working.
+- **Models list.** Tap the Models ready chip on Translate to see the bubble detector, LaMa and a
+  loaded local AI model with their file sizes. Models that load on first use are shown as such.
+- **Updates from the new release page.** The update check looks at the Kazeko release page first
+  and then at the old one. APK files are matched by version and ABI, so both file names work.
+
+### Changed
+
+- **New name and look.** The app is called Kazeko in the launcher and in every visible text, with
+  a new icon (a cream "kz" with a mint ".ko" tag on dark) and a mint default accent. The light
+  theme is the default. The picked colour drives buttons, switches and highlights while the
+  surfaces stay calm. Not renamed: the package, `KZKT-` licence codes and the Download/KZKT and
+  Pictures/KZKT folders.
+- **Floating navigation bar.** A frosted glass bar (a tinted one on older Android) that floats
+  over the content. Tabs squish under the finger, the pill slides with a little overshoot, and
+  each icon has its own move: the gear turns, the clock winds back, the Translate mark flips. The
+  page drifts toward the tab you picked, with a light haptic tick.
+- **Motion.** Built-in components move on springs, open waits use a shape-morphing loading
+  indicator, progress bars are wavy, buttons and cards bounce when pressed, and sizes change
+  smoothly. Toggles, choices and the start, cancel and end of a translation give a little haptic.
+- **One look for menus and fields.** Drop-down menus share one raised, rounded list with the
+  picked row on a soft pill. Fields are filled and rounded, dialogs and sheets rounder, and
+  corners are squircles outside the editor and reader. Headlines use bold, tightly tracked Inter.
+- **History.** A filled search pill, quiet day headers, thumbnails that shimmer and then fade in,
+  and folder cards that show their first two pages as a small stack.
+- **Translate.** The provider and language chips open drop-down menus. The Classic prompt is merged
+  into Standard (Standard with no instructions is the old Classic prompt, same text). The chip
+  says Models ready or Loading models instead of YOLO.
+- **Settings.** Appearance comes first. Provider, target language, text color and sound effect
+  text are drop-downs. Advanced drops Min Request Delay, Pad X / Pad Y Ratio and Min Padding from
+  the list (saved values stay and Reset still clears them). The Per Minute row no longer
+  overlaps its switch.
+
 ## [v3.1.0] - 2026-11-22
 
 ### Added
